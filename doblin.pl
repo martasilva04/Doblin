@@ -1,4 +1,5 @@
 :- use_module(library(random)).
+:- use_module(library(lists)).
 
 % Gera o tabuleiro 6x6 inicial com letras e números na ordem correta
 tabuleiro_inicial(Tabuleiro) :-
@@ -66,6 +67,12 @@ celula_vazia(Tabuleiro, LinhaIndex, ColunaIndex) :-
     nth0(ColunaIndex, LinhaAtual, Valor),
     Valor = ' '.  % A célula está vazia se contém um espaço em branco
 
+% Converte as coordenadas fornecidas pelo jogador em índices para o primeiro tabuleiro
+coordenadas_para_indices([Letra, Numero], LinhaIndex, ColunaIndex) :-
+    char_code(Letra, LetraCode),
+    LinhaIndex is LetraCode - 65+1,  % A=65 na tabela ASCII, portanto subtraímos 65
+    ColunaIndex is Numero.    % O número já está no formato 1-6, mas precisamos de 0-5
+
 % Converte coordenadas em índices para o segundo tabuleiro
 coordenadas_para_indices_segundo([Letra, Numero], LetrasEmbaralhadas, ColunasEmbaralhadas, LinhaIndex, ColunaIndex) :-
     nth1(LinhaIndex, LetrasEmbaralhadas, Letra),  % Encontra o índice da letra embaralhada
@@ -77,29 +84,40 @@ imprimir_tabuleiro([Linha | Resto]) :-
     write(Linha), nl,
     imprimir_tabuleiro(Resto).
 
-% Alterna entre dois jogadores
+tabuleiro_cheio(Tabuleiro) :-
+    \+ (member(Linha, Tabuleiro), member(' ', Linha)).
+
 jogar(Tabuleiro1, Tabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas, Jogador) :-
-    clear_console,
-    write('Tabuleiro Atual (Inicial):'), nl,
-    imprimir_tabuleiro(Tabuleiro1),
-    nl,
-    write('Tabuleiro Atual (Embaralhado):'), nl,
-    imprimir_tabuleiro(Tabuleiro2),
-    nl,
-    (   Jogador = 1 -> write('Jogador 1 (X), sua vez:'), Simbolo = 'X'
-    ;   Jogador = 2 -> write('Jogador 2 (O), sua vez:'), Simbolo = 'O'
-    ),
-    nl,
-    ler_entrada(Coordenadas),
-    coordenadas_para_indices(Coordenadas, LinhaIndex, ColunaIndex),
-    (   celula_vazia(Tabuleiro1, LinhaIndex, ColunaIndex) ->  % Verifica se a célula está vazia
-        atualizar_tabuleiro(Tabuleiro1, LinhaIndex, ColunaIndex, Simbolo, NovoTabuleiro1),
-        coordenadas_para_indices_segundo(Coordenadas, LetrasEmbaralhadas, ColunasEmbaralhadas, LinhaIndex2, ColunaIndex2),
-        atualizar_tabuleiro(Tabuleiro2, LinhaIndex2, ColunaIndex2, Simbolo, NovoTabuleiro2),
-        NovoJogador is (Jogador mod 2) + 1,  % Alterna o jogador
-        jogar(NovoTabuleiro1, NovoTabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas, NovoJogador)
-    ;   write('Célula já ocupada! Tente novamente.'), nl,
-        jogar(Tabuleiro1, Tabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas, Jogador)
+    (   tabuleiro_cheio(Tabuleiro1)  % Verifica se o tabuleiro está cheio
+    ->  clear_console,
+        write('Tabuleiro Final (Inicial):'), nl,
+        imprimir_tabuleiro(Tabuleiro1),
+        nl,
+        write('Tabuleiro Final (Embaralhado):'), nl,
+        imprimir_tabuleiro(Tabuleiro2),
+        nl,
+        write('Fim de jogo!'), nl
+    ;   clear_console,
+        write('Tabuleiro Atual (Inicial):'), nl,
+        imprimir_tabuleiro(Tabuleiro1),
+        nl,
+        write('Tabuleiro Atual (Embaralhado):'), nl,
+        imprimir_tabuleiro(Tabuleiro2),
+        nl,
+        (   Jogador = 1 -> write('Jogador 1 (X), sua vez:'), nl, Simbolo = 'X'
+        ;   Jogador = 2 -> write('Jogador 2 (O), sua vez:'), nl, Simbolo = 'O'
+        ),
+        ler_entrada(Coordenadas),
+        coordenadas_para_indices(Coordenadas, LinhaIndex, ColunaIndex),
+        (   celula_vazia(Tabuleiro1, LinhaIndex, ColunaIndex)  % Verifica se a célula está vazia
+        ->  atualizar_tabuleiro(Tabuleiro1, LinhaIndex, ColunaIndex, Simbolo, NovoTabuleiro1),
+            coordenadas_para_indices_segundo(Coordenadas, LetrasEmbaralhadas, ColunasEmbaralhadas, LinhaIndex2, ColunaIndex2),
+            atualizar_tabuleiro(Tabuleiro2, LinhaIndex2, ColunaIndex2, Simbolo, NovoTabuleiro2),
+            NovoJogador is (Jogador mod 2) + 1,  % Alterna o jogador
+            jogar(NovoTabuleiro1, NovoTabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas, NovoJogador)
+        ;   write('Célula já ocupada! Tente novamente.'), nl,
+            jogar(Tabuleiro1, Tabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas, Jogador)
+        )
     ).
 
 % Inicia o jogo
@@ -107,3 +125,8 @@ jogar :-
     tabuleiro_inicial(Tabuleiro1),
     tabuleiro_embaralhado(Tabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas),
     jogar(Tabuleiro1, Tabuleiro2, LetrasEmbaralhadas, ColunasEmbaralhadas, 1).
+
+% clear_console/0
+% Clears console
+clear_console:- 
+    write('\33\[2J').
