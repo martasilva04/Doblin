@@ -46,7 +46,7 @@ game_loop(GameState):-
     display_game(GameState),
     game_over(GameState), !.
 game_loop(GameState):-
-    ler_entrada(Coordenadas),
+    read_entry(Coordenadas,GameState),
     move(GameState, Coordenadas, NewGameState),
     game_loop(NewGameState).
 
@@ -89,15 +89,15 @@ board_completed([[' '|FirstRow]|Rest]):-
 
 % Predicado initial_state/2
 % Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
-initial_state(GameConfig, game_state(BoardInicial, BoardEmbaralhado, player1)) :-
+initial_state(GameConfig, game_state(Board1, Board2, player1)) :-
     member(board_size(Option), GameConfig),
     get_board_size(Option, Rows, Cols),
     
     % Gera o tabuleiro inicial
-    create_empty_board(Rows, Cols, BoardInicial),
+    create_shuffle_board(Rows, Cols, Board1),
     
     % Gera o tabuleiro embaralhado
-    tabuleiro_embaralhado(Rows, Cols, BoardEmbaralhado).
+    create_shuffle_board(Rows, Cols, Board2).
 
 
 
@@ -109,6 +109,7 @@ get_board_size(2, 8, 8). % Opção 2 -> Tabuleiro 8x8
 get_board_size(_, 3, 3). % Opção padrão -> Tabuleiro 3x3 (fallback)
 
 % Cria um tabuleiro vazio (lista de listas) com o tamanho especificado, incluindo cabeçalho e letras.
+/*
 create_empty_board(Rows, Cols, Tabuleiro) :-
     % Gera os números do cabeçalho
     numlist(1, Cols, Colunas),
@@ -117,7 +118,8 @@ create_empty_board(Rows, Cols, Tabuleiro) :-
     % Adiciona o cabeçalho no topo
     Tabuleiro = [[' ' | Colunas] | Linhas],
     % Cria as linhas com letras e células vazias
-    create_lettered_rows(Letras, Cols, Linhas).
+    create_lettered_rows(Letras, Cols, Linhas). 
+*/
 
 % Cria linhas com letras na borda esquerda e células vazias.
 create_lettered_rows([], _, []). % Caso base: sem letras, sem linhas.
@@ -133,7 +135,7 @@ create_empty_row(Cols, [' '|Rest]) :-
     create_empty_row(NextCols, Rest).
 
 % Gera o tabuleiro embaralhado de acordo com o tamanho (6x6 ou 8x8)
-tabuleiro_embaralhado(Rows, Cols, TabuleiroEmbaralhado) :-
+create_shuffle_board(Rows, Cols, Board) :-
     % Cria listas de números e letras conforme o tamanho do tabuleiro
     numlist(1, Cols, Colunas),
     alphabet_list(Rows, Letras),
@@ -143,31 +145,22 @@ tabuleiro_embaralhado(Rows, Cols, TabuleiroEmbaralhado) :-
     random_permutation(Letras, LetrasEmbaralhadas),
     
     % Gera a linha do cabeçalho (números embaralhados)
-    TabuleiroEmbaralhado = [[' ' | ColunasEmbaralhadas] | LinhasEmbaralhadas],
+    Board = [[' ' | ColunasEmbaralhadas] | LinhasEmbaralhadas],
     
     % Gera as linhas restantes com as letras embaralhadas
-    gerar_linhas_embaralhadas(LetrasEmbaralhadas, Cols, LinhasEmbaralhadas).
-
-% Cria as linhas embaralhadas
-gerar_linhas_embaralhadas([], _, []). % Caso base: sem letras, sem linhas.
-gerar_linhas_embaralhadas([Letra|RestoLetras], Cols, [[Letra | LinhaVazia] | RestoLinhas]) :-
-    create_empty_row(Cols, LinhaVazia), % Cria uma linha vazia com o número correto de colunas.
-    gerar_linhas_embaralhadas(RestoLetras, Cols, RestoLinhas).
+    create_lettered_rows(LetrasEmbaralhadas, Cols, LinhasEmbaralhadas).
 
 
 
-% Cria a lista de letras do tabuleiro
-alphabet_list(6, List) :- List = ['A', 'B', 'C', 'D', 'E', 'F'].
-alphabet_list(8, List) :- List = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].
 
 % display_game(+GameState)
 % Exibe o estado atual do jogo com base no GameState atualizado.
-display_game(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer)) :-
+display_game(game_state(Board1, Board2, CurrentPlayer)) :-
     write('Board 1:'), nl,
-    display_board(BoardInicial), nl,
+    display_board(Board1), nl,
     
     write('Board 2:'), nl,
-    display_board(BoardEmbaralhado), nl,
+    display_board(Board2), nl,
     
     % Exibe o jogador atual
     write('Your turn: '), write(CurrentPlayer), nl.
@@ -265,34 +258,41 @@ within_bounds(Board, Row, Col) :-
 
 
 
-ler_entrada([Letra, Numero]) :-
-    write('Choose Letter (A-F): '),
+read_entry([Letra, Numero],game_state(B1,B2,P)) :-
+    length(B1,Size),  
+    Size1 is Size - 1,           % To get the number of rows of the board
+    alphabet_list(Size1,AlphaList),
+    AlphaList = [FirstLetter|_],
+    last(_,LastLetter,AlphaList),
+    format('Choose letter (~w-~w): ', [FirstLetter, LastLetter]),
     get_char(Letra),       % Lê um caractere para a linha
-    get_char(_),           % Descarta o '\n' pendente no buffer
-    (   member(Letra, ['A', 'B', 'C', 'D', 'E', 'F'])  % Verifica se a letra está dentro de A-F
+    get_char(_),           % Descarta o '\n' pendente no buffer  
+    (   member(Letra, AlphaList)  % Verifica se a letra está dentro de A-F
     ->  true
     ;   write('Letra inválida! A letra deve ser entre A e F. Tente novamente.'), nl,
-        ler_entrada([Letra, Numero])  % Se a letra for inválida, pede a entrada novamente
+        read_entry([Letra, Numero])  % Se a letra for inválida, pede a entrada novamente
     ),
     
-    write('Choose number (1-6): '),
+    num_list(1,Size1,NumList),
+    NumList = [FirstNumber|_],
+    last(_,LastNumber,NumList),
+    format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
     get_char(NumChar),     % Lê o número como caractere
     get_char(_),           % Descarta o '\n' pendente no buffer
     char_code(NumChar, NumCode),
     Numero is NumCode - 48,  % Converte o caractere do número para inteiro
-
-    (   Numero >= 1, Numero =< 6  % Verifica se o número está dentro do intervalo 1-6
+    (   member(Numero, NumList)  % Verifica se o número está dentro do intervalo 1-6
     ->  true
     ;   write('Número inválido! O número deve ser entre 1 e 6. Tente novamente.'), nl,
-        ler_entrada([Letra, Numero])  % Se o número for inválido, pede a entrada novamente
+        read_entry([Letra, Numero])  % Se o número for inválido, pede a entrada novamente
     ).
 
 % Gera uma lista de números de 1 até N
-numlist(M, M, [M]).  % Caso base: quando M é igual a N
-numlist(M, N, [M|Rest]) :-
+num_list(M, M, [M]).  % Caso base: quando M é igual a N
+num_list(M, N, [M|Rest]) :-
     M < N,
     M1 is M + 1,
-    numlist(M1, N, Rest).
+    num_list(M1, N, Rest).
 
 
 % calcular pontos 
@@ -455,3 +455,8 @@ shuffle_board(Board, ShuffledBoard) :-
     random_permutation(Rows, ShuffledRows),
     % Adiciona o cabeçalho de volta
     ShuffledBoard = [Header | ShuffledRows].
+
+
+alphabet_list(N, List) :-
+    N > 0,
+    findall(Char, (between(1, N, X), nth1(X, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'], Char)), List).
