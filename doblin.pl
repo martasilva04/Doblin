@@ -40,14 +40,52 @@ setup_game(Player1Type, Player2Type) :-
     write('Configurando o jogo...'), nl,
     GameConfig = [player1(Player1Type), player2(Player2Type), board_size(Number)],
     initial_state(GameConfig, InitialGameState),
-    display_game(InitialGameState),
-    write('Jogo configurado. Pronto para iniciar!'), nl,
-    ler_entrada(Coordenadas),
-    write('pesca1'),
-    move(InitialGameState, Coordenadas, NewGameState),
-    write('pesca2'),
-    display_game(NewGameState).
+    game_loop(InitialGameState).
 
+game_loop(GameState):-
+    display_game(GameState),
+    game_over(GameState), !.
+game_loop(GameState):-
+    ler_entrada(Coordenadas),
+    move(GameState, Coordenadas, NewGameState),
+    game_loop(NewGameState).
+
+game_over(game_state(T1, T2, P)):-
+    board_completed(T1),
+    write('Fim de jogo! Calculando pontos...'), nl,
+    calcular_pontos(T1, x, ScoreX1),
+    calcular_pontos(T1, o, ScoreO1),
+    ScoreB1 is ScoreX1+ScoreO1,
+    write('Score Board1 (Player1): '), write(ScoreB1), nl,
+
+    calcular_pontos(T2, x, ScoreX2),
+    calcular_pontos(T2, o, ScoreO2),
+    ScoreB2 is ScoreX2+ScoreO2,
+    write('Score Board2 (Player2): '), write(ScoreB2), nl,
+
+    (   
+        ScoreB1 < ScoreB2 ->
+        write('Player 1 (X) won!')
+    ;   
+        ScoreB1 > ScoreB2 ->
+        write('Player 2 (O) won!')
+    ;   
+        write('Draw')
+    ).
+
+row_completed([]).
+row_completed([H|T]) :-
+    H \= ' ',
+    row_completed(T).
+
+all_rows_completed([]).
+all_rows_completed([H|T]):-
+    row_completed(H),
+    all_rows_completed(T).    
+
+board_completed([[' '|FirstRow]|Rest]):-
+    row_completed(FirstRow),
+    all_rows_completed(Rest).
 
 % Predicado initial_state/2
 % Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
@@ -125,18 +163,14 @@ alphabet_list(8, List) :- List = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].
 % display_game(+GameState)
 % Exibe o estado atual do jogo com base no GameState atualizado.
 display_game(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer)) :-
-    write('Estado atual do jogo:'), nl,
-    
-    % Exibe o tabuleiro inicial
-    write('Tabuleiro Inicial:'), nl,
+    write('Board 1:'), nl,
     display_board(BoardInicial), nl,
     
-    % Exibe o tabuleiro embaralhado
-    write('Tabuleiro Embaralhado:'), nl,
+    write('Board 2:'), nl,
     display_board(BoardEmbaralhado), nl,
     
     % Exibe o jogador atual
-    write('Jogador atual: '), write(CurrentPlayer), nl.
+    write('Your turn: '), write(CurrentPlayer), nl.
 
 
 % Exibe o tabuleiro
@@ -146,33 +180,23 @@ display_board([Row|Rows]) :-
     display_board(Rows).
 
 
-
-
 % move(+GameState, +Move, -NewGameState)
 % Atualiza o estado do jogo com base no movimento do jogador.
 move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer)) :-
     % Converte o movimento (letra e número) para índices.
-    write(Move),nl,
     coordenadas_para_indices(Move, LinhaIndex, ColunaIndex),
-    write('cheguei'),nl,
     
     % Verifica se a célula no tabuleiro inicial está vazia.
     celula_vazia(BoardInicial, LinhaIndex, ColunaIndex),
-    write('pesca4'),
     % Determina o símbolo do jogador atual.
     simbolo_jogador(CurrentPlayer, Simbolo),
-    write('pesca5'),
     % Atualiza o tabuleiro inicial.
     atualizar_tabuleiro(BoardInicial, LinhaIndex, ColunaIndex, Simbolo, NewBoardInicial),
-    write('pesca6'),
     % Converte as coordenadas para o tabuleiro embaralhado.
     coordenadas_para_indices_segundo(Move, BoardEmbaralhado, LinhaIndex2, ColunaIndex2),
-    write('pesca7'),
     % Atualiza o tabuleiro embaralhado.
     atualizar_tabuleiro(BoardEmbaralhado, LinhaIndex2, ColunaIndex2, Simbolo, NewBoardEmbaralhado),
-    write('pesca8'),
     % Alterna para o próximo jogador.
-    write('pesca9'),
     proximo_jogador(CurrentPlayer, NextPlayer).
 
 % coordenadas_para_indices(+Coordenadas, -Linha, -Coluna)
@@ -193,9 +217,7 @@ gerar_colunas([H|Tabuleiro], H).
 % Converte as coordenadas (ex.: "A1") para os índices correspondentes no tabuleiro embaralhado.
 coordenadas_para_indices_segundo([Letra, Numero], BoardEmbaralhado, Linha, Coluna) :-
     extrair_letras(BoardEmbaralhado, LetrasEmbaralhadas),
-    write(LetrasEmbaralhadas),
     gerar_colunas(BoardEmbaralhado, ColunasEmbaralhadas),
-    write(ColunasEmbaralhadas),
     nth0(Linha, LetrasEmbaralhadas, Letra),  % Encontra o índice da letra embaralhada
     nth0(Coluna, ColunasEmbaralhadas, Numero).
 
@@ -244,7 +266,7 @@ within_bounds(Board, Row, Col) :-
 
 
 ler_entrada([Letra, Numero]) :-
-    write('Digite a letra (A-F): '),
+    write('Choose Letter (A-F): '),
     get_char(Letra),       % Lê um caractere para a linha
     get_char(_),           % Descarta o '\n' pendente no buffer
     (   member(Letra, ['A', 'B', 'C', 'D', 'E', 'F'])  % Verifica se a letra está dentro de A-F
@@ -253,14 +275,14 @@ ler_entrada([Letra, Numero]) :-
         ler_entrada([Letra, Numero])  % Se a letra for inválida, pede a entrada novamente
     ),
     
-    write('Digite o número (1-6): '),
+    write('Choose number (1-6): '),
     get_char(NumChar),     % Lê o número como caractere
     get_char(_),           % Descarta o '\n' pendente no buffer
     char_code(NumChar, NumCode),
     Numero is NumCode - 48,  % Converte o caractere do número para inteiro
 
     (   Numero >= 1, Numero =< 6  % Verifica se o número está dentro do intervalo 1-6
-    ->  true, write('deu')
+    ->  true
     ;   write('Número inválido! O número deve ser entre 1 e 6. Tente novamente.'), nl,
         ler_entrada([Letra, Numero])  % Se o número for inválido, pede a entrada novamente
     ).
@@ -271,3 +293,165 @@ numlist(M, N, [M|Rest]) :-
     M < N,
     M1 is M + 1,
     numlist(M1, N, Rest).
+
+
+% calcular pontos 
+
+% Calcula os pontos de um tabuleiro
+calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
+    % Calcula pontos de linhas horizontais
+    findall(1, linha_completa(Tabuleiro, Simbolo), LinhasPontos),
+    % Calcula pontos de colunas verticais
+    findall(1, coluna_completa(Tabuleiro, Simbolo), ColunasPontos),
+    % Calcula pontos de quadrados 2x2
+    findall(1, quadrado_completo(Tabuleiro, Simbolo), QuadradosPontos),
+    % Calcula pontos de diagonais
+    findall(1, diagonal_completa(Tabuleiro, Simbolo), DiagonaisPontos),
+    % Soma todos os pontos
+    length(LinhasPontos, PontosLinhas),
+    length(ColunasPontos, PontosColunas),
+    length(QuadradosPontos, PontosQuadrados),
+    length(DiagonaisPontos, PontosDiagonais),
+    Pontos is PontosLinhas + PontosColunas + PontosQuadrados + PontosDiagonais.
+
+% Verifica se uma linha está completa
+linha_completa(Tabuleiro, Simbolo) :-
+    member(Linha, Tabuleiro),
+    sublist([Simbolo, Simbolo, Simbolo, Simbolo], Linha).
+
+% Verifica se uma coluna está completa
+coluna_completa(Tabuleiro, Simbolo) :-
+    transpose(Tabuleiro, TabuleiroTransposto),
+    linha_completa(TabuleiroTransposto, Simbolo).
+
+% Verifica se um quadrado 2x2 está completo
+quadrado_completo(Tabuleiro, Simbolo) :-
+    between(1, 5, Linha), % Verifica as posições das linhas (1 a 5)
+    between(1, 5, Coluna), % Verifica as posições das colunas (1 a 5)
+    nth1(Linha, Tabuleiro, Linha1),
+    nth1(Coluna, Linha1, Simbolo),
+    Linha2Index is Linha + 1,
+    nth1(Linha2Index, Tabuleiro, Linha2),
+    Coluna2Index is Coluna + 1,
+    nth1(Coluna, Linha2, Simbolo),
+    nth1(Coluna2Index, Linha1, Simbolo),
+    nth1(Coluna2Index, Linha2, Simbolo).
+
+% Verifica se uma diagonal de 4 símbolos está completa
+diagonal_completa(Tabuleiro, Simbolo) :-
+    % Diagonais normais (de cima para baixo, da esquerda para a direita)
+    diagonal_normal(Tabuleiro, Simbolo);
+    % Diagonais invertidas (de cima para baixo, da direita para a esquerda)
+    diagonal_invertida(Tabuleiro, Simbolo).
+
+% Verifica se uma diagonal normal (esquerda para direita) está completa
+diagonal_normal(Tabuleiro, Simbolo) :-
+    between(1, 3, Linha), % As diagonais normais começam de 1 a 3
+    between(1, 3, Coluna), % As diagonais normais começam de 1 a 3
+    nth1(Linha, Tabuleiro, Linha1),
+    nth1(Coluna, Linha1, Simbolo),
+    Linha2 is Linha + 1,
+    Coluna2 is Coluna + 1,
+    nth1(Linha2, Tabuleiro, Linha2_),
+    nth1(Coluna2, Linha2_, Simbolo),
+    Linha3 is Linha + 2,
+    Coluna3 is Coluna + 2,
+    nth1(Linha3, Tabuleiro, Linha3_),
+    nth1(Coluna3, Linha3_, Simbolo),
+    Linha4 is Linha + 3,
+    Coluna4 is Coluna + 3,
+    nth1(Linha4, Tabuleiro, Linha4_),
+    nth1(Coluna4, Linha4_, Simbolo).
+
+% Verifica se uma diagonal invertida (direita para esquerda) está completa
+diagonal_invertida(Tabuleiro, Simbolo) :-
+    between(1, 3, Linha), % As diagonais invertidas começam de 1 a 3
+    between(4, 6, Coluna), % As diagonais invertidas começam de 4 a 6
+    nth1(Linha, Tabuleiro, Linha1),
+    nth1(Coluna, Linha1, Simbolo),
+    Linha2 is Linha + 1,
+    Coluna2 is Coluna - 1,
+    nth1(Linha2, Tabuleiro, Linha2_),
+    nth1(Coluna2, Linha2_, Simbolo),
+    Linha3 is Linha + 2,
+    Coluna3 is Coluna - 2,
+    nth1(Linha3, Tabuleiro, Linha3_),
+    nth1(Coluna3, Linha3_, Simbolo),
+    Linha4 is Linha + 3,
+    Coluna4 is Coluna - 3,
+    nth1(Linha4, Tabuleiro, Linha4_),
+    nth1(Coluna4, Linha4_, Simbolo).
+
+% Transpõe uma matriz (tabuleiro)
+transpose([], []).
+transpose([F|Fs], Ts) :-
+    transpose(F, [F|Fs], Ts).
+
+transpose([], _, []).
+transpose([_|Rs], Ms, [Ts|Tss]) :-
+    lists_firsts_rests(Ms, Ts, Ms1),
+    transpose(Rs, Ms1, Tss).
+
+lists_firsts_rests([], [], []).
+lists_firsts_rests([[F|Os]|Rest], [F|Fs], [Os|Oss]) :-
+    lists_firsts_rests(Rest, Fs, Oss).
+
+% Define se uma lista é sublista de outra
+sublist(Sub, List) :-
+    append(_, Rest, List),
+    append(Sub, _, Rest).
+
+% Gera números de Min até Max
+between(Min, Max, Min) :- Min =< Max.
+between(Min, Max, N) :-
+    Min < Max,
+    Next is Min + 1,
+    between(Next, Max, N).
+
+
+
+% initial_state/2
+% Gera dois tabuleiros (inicial e embaralhado) completamente preenchidos.
+initial_state_preenchido(GameConfig, game_state(BoardInicial, BoardEmbaralhado, player1)) :-
+    member(board_size(Option), GameConfig),
+    get_board_size(Option, Rows, Cols),
+    
+    % Gera o tabuleiro inicial preenchido
+    create_filled_board(Rows, Cols, BoardInicial),
+    
+    % Gera o tabuleiro embaralhado preenchido
+    create_filled_board(Rows, Cols, TempBoard),
+    shuffle_board(TempBoard, BoardEmbaralhado).
+
+% Cria um tabuleiro preenchido alternadamente com 'x' e 'o'.
+create_filled_board(Rows, Cols, Tabuleiro) :-
+    numlist(1, Rows, RowNumbers),
+    alphabet_list(Rows, Letras),
+    Tabuleiro = [[' ' | RowNumbers] | Linhas],
+    create_filled_rows(Letras, Cols, Linhas).
+
+% Cria as linhas preenchidas com símbolos alternados.
+create_filled_rows([], _, []).
+create_filled_rows([Letra | RestLetras], Cols, [[Letra | Row] | RestRows]) :-
+    fill_row(Cols, Row, x),  % Começa preenchendo com 'x'.
+    create_filled_rows(RestLetras, Cols, RestRows).
+
+% Preenche uma linha alternando os símbolos.
+fill_row(0, [], _).
+fill_row(N, [Symbol | Rest], Symbol) :-
+    N > 0,
+    NextN is N - 1,
+    alternate_symbol(Symbol, NextSymbol),  % Alterna entre 'x' e 'o'.
+    fill_row(NextN, Rest, NextSymbol).
+
+% Alterna entre os símbolos 'x' e 'o'.
+alternate_symbol(x, o).
+alternate_symbol(o, x).
+
+% Embaralha um tabuleiro preenchido.
+shuffle_board(Board, ShuffledBoard) :-
+    % Remove o cabeçalho e embaralha as linhas
+    Board = [Header | Rows],
+    random_permutation(Rows, ShuffledRows),
+    % Adiciona o cabeçalho de volta
+    ShuffledBoard = [Header | ShuffledRows].
