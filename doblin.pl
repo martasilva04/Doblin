@@ -193,20 +193,14 @@ display_board([Row|Rows]) :-
 % move(+GameState, +Move, -NewGameState)
 % Atualiza o estado do jogo com base no movimento do jogador.
 move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer)) :-
-    % Converte o movimento (letra e número) para índices.
     coordenadas_para_indices(Move, LinhaIndex, ColunaIndex),
-    
-    % Verifica se a célula no tabuleiro inicial está vazia.
     celula_vazia(BoardInicial, LinhaIndex, ColunaIndex),
-    % Determina o símbolo do jogador atual.
     simbolo_jogador(CurrentPlayer, Simbolo),
-    % Atualiza o tabuleiro inicial.
-    atualizar_tabuleiro(BoardInicial, LinhaIndex, ColunaIndex, Simbolo, NewBoardInicial),
-    % Converte as coordenadas para o tabuleiro embaralhado.
+
+    coordenadas_para_indices_segundo(Move, BoardInicial, LinhaIndex1, ColunaIndex1),
+    atualizar_tabuleiro(BoardInicial, LinhaIndex1, ColunaIndex1, Simbolo, NewBoardInicial),
     coordenadas_para_indices_segundo(Move, BoardEmbaralhado, LinhaIndex2, ColunaIndex2),
-    % Atualiza o tabuleiro embaralhado.
     atualizar_tabuleiro(BoardEmbaralhado, LinhaIndex2, ColunaIndex2, Simbolo, NewBoardEmbaralhado),
-    % Alterna para o próximo jogador.
     proximo_jogador(CurrentPlayer, NextPlayer).
 
 % coordenadas_para_indices(+Coordenadas, -Linha, -Coluna)
