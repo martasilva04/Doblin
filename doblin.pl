@@ -13,26 +13,23 @@ game_menu :-
     write('3. Jogar (PC/H)'), nl,
     write('4. Jogar (PC/PC)'), nl,
     write('Escolha uma opcao: '),
-    get_valid_option(Number, [1,2,3,4]),
-    handle_option(Number).
-
-% Trata a escolha do menu
-handle_option(1) :- setup_game(human, human).
-handle_option(2) :- setup_game(human, computer).
-handle_option(3) :- setup_game(computer, human).
-handle_option(4) :- setup_game(computer, computer).
-handle_option(_) :-
-    write('Opcao invalida. Tente novamente.'), nl,
-    game_menu.
-
-% Configura o jogo de acordo com os tipos dos jogadores
-setup_game(Player1Type, Player2Type) :-
+    get_valid_option(Type, [1,2,3,4]),
     write('Escolha o tamanho do tabuleiro: '), nl,
     write('1. 6x6'), nl,
     write('2. 8x8'), nl,
-    get_valid_option(Number, [1,2]), 
+    get_valid_option(Size, [1,2]), 
+    handle_option(Type, Size).
+
+% Trata a escolha do menu
+handle_option(1, Size) :- setup_game(human, human, Size).
+handle_option(2, Size) :- setup_game(human, computer, Size).
+handle_option(3, Size) :- setup_game(computer, human, Size).
+handle_option(4, Size) :- setup_game(computer, computer, Size).
+
+% Configura o jogo de acordo com os tipos dos jogadores
+setup_game(Player1Type, Player2Type, Size) :- 
     write('Configurando o jogo...'), nl,
-    GameConfig = [player1(Player1Type), player2(Player2Type), board_size(Number)],
+    GameConfig = [player1(Player1Type), player2(Player2Type), board_size(Size)],
     initial_state(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
@@ -193,10 +190,7 @@ display_board([Row|Rows]) :-
 % move(+GameState, +Move, -NewGameState)
 % Atualiza o estado do jogo com base no movimento do jogador.
 move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer)) :-
-    coordenadas_para_indices(Move, LinhaIndex, ColunaIndex),
-    celula_vazia(BoardInicial, LinhaIndex, ColunaIndex),
     simbolo_jogador(CurrentPlayer, Simbolo),
-
     coordenadas_para_indices_segundo(Move, BoardInicial, LinhaIndex1, ColunaIndex1),
     atualizar_tabuleiro(BoardInicial, LinhaIndex1, ColunaIndex1, Simbolo, NewBoardInicial),
     coordenadas_para_indices_segundo(Move, BoardEmbaralhado, LinhaIndex2, ColunaIndex2),
@@ -268,19 +262,27 @@ within_bounds(Board, Row, Col) :-
     Col > 0, Col =< NumCols.         % Verifica se a coluna está dentro dos limites
 
 
-
 read_input([Letra, Numero], game_state(B1, B2, P)) :-
     length(B1, Size),
     Size1 is Size - 1,
     alphabet_list(Size1, AlphaList),
     AlphaList = [FirstLetter|_],
     last(_, LastLetter, AlphaList),
-    get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra), 
     num_list(1, Size1, NumList),
     NumList = [FirstNumber|_],
     last(_, LastNumber, NumList),
+    repeat, 
+    get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra),
     format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
-    get_valid_option(Numero, NumList). 
+    get_valid_option(Numero, NumList),
+    coordenadas_para_indices_segundo([Letra, Numero], B1, LinhaIndex, ColunaIndex),
+    (   celula_vazia(B1, LinhaIndex, ColunaIndex) 
+    ->  ! 
+    ;   write('Invalid! This cell is ocupied.'), nl,
+        fail  
+    ).
+
+    
 
 get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra) :-
     format('Choose letter (~w-~w): ', [FirstLetter, LastLetter]),
