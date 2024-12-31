@@ -65,7 +65,7 @@ game_loop(GameState):-
     move(GameState, Coordenadas, NewGameState),
     game_loop(NewGameState).
 
-game_over(game_state(T1, T2, P)):-
+game_over(game_state(T1, T2, P, _S)):-
     board_completed(T1),
     write('Fim de jogo! Calculando pontos...'), nl,
     calcular_pontos(T1, x, ScoreX1),
@@ -104,7 +104,7 @@ board_completed([[' '|FirstRow]|Rest]):-
 
 % Predicado initial_state/2
 % Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
-initial_state(GameConfig, game_state(Board1, Board2, player1)) :-
+initial_state(GameConfig, game_state(Board1, Board2, player1, x)) :-
     member(board_size(Option), GameConfig),
     get_board_size(Option, Rows, Cols),
     
@@ -169,15 +169,16 @@ create_shuffle_board(Rows, Cols, Board) :-
 
 % display_game(+GameState)
 % Exibe o estado atual do jogo com base no GameState atualizado.
-display_game(game_state(Board1, Board2, CurrentPlayer)) :-
-    write('Board 1:'), nl,
+display_game(game_state(Board1, Board2, CurrentPlayer, Symbol)) :-
+    write('Board Player1:'), nl,
     display_board(Board1), nl,
     
-    write('Board 2:'), nl,
+    write('Board Player2:'), nl,
     display_board(Board2), nl,
     
     % Exibe o jogador atual
-    write('Your turn: '), write(CurrentPlayer), nl.
+    write('Your turn: '), write(CurrentPlayer), nl,
+    format('Place a ~w', Symbol), nl.
 
 
 % Exibe o tabuleiro
@@ -189,13 +190,13 @@ display_board([Row|Rows]) :-
 
 % move(+GameState, +Move, -NewGameState)
 % Atualiza o estado do jogo com base no movimento do jogador.
-move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer)) :-
-    simbolo_jogador(CurrentPlayer, Simbolo),
+move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer, Symbol), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer,NewSymbol)) :-
     coordenadas_para_indices_segundo(Move, BoardInicial, LinhaIndex1, ColunaIndex1),
-    atualizar_tabuleiro(BoardInicial, LinhaIndex1, ColunaIndex1, Simbolo, NewBoardInicial),
+    atualizar_tabuleiro(BoardInicial, LinhaIndex1, ColunaIndex1, Symbol, NewBoardInicial),
     coordenadas_para_indices_segundo(Move, BoardEmbaralhado, LinhaIndex2, ColunaIndex2),
-    atualizar_tabuleiro(BoardEmbaralhado, LinhaIndex2, ColunaIndex2, Simbolo, NewBoardEmbaralhado),
-    proximo_jogador(CurrentPlayer, NextPlayer).
+    atualizar_tabuleiro(BoardEmbaralhado, LinhaIndex2, ColunaIndex2, Symbol, NewBoardEmbaralhado),
+    get_next_symbol(Symbol,NewSymbol),
+    next_player(CurrentPlayer, Symbol, NextPlayer).
 
 % coordenadas_para_indices(+Coordenadas, -Linha, -Coluna)
 % Converte as coordenadas fornecidas pelo jogador em índices para o primeiro tabuleiro
@@ -235,13 +236,15 @@ atualizar_tabuleiro(Board, Linha, Coluna, Simbolo, NewBoard) :-
 
 % simbolo_jogador(+Player, -Simbolo)
 % Associa cada jogador ao seu respectivo símbolo.
-simbolo_jogador(player1, x).
-simbolo_jogador(player2, o).
+get_next_symbol(x, o).
+get_next_symbol(o, x).
 
 % proximo_jogador(+CurrentPlayer, -NextPlayer)
 % Alterna o jogador atual.
-proximo_jogador(player1, player2).
-proximo_jogador(player2, player1).
+next_player(player1, x, player1).
+next_player(player1, o, player2).
+next_player(player2, x, player2).
+next_player(player2, o, player1).
 
 
 
@@ -262,7 +265,7 @@ within_bounds(Board, Row, Col) :-
     Col > 0, Col =< NumCols.         % Verifica se a coluna está dentro dos limites
 
 
-read_input([Letra, Numero], game_state(B1, B2, P)) :-
+read_input([Letra, Numero], game_state(B1, B2, P, S)) :-
     length(B1, Size),
     Size1 is Size - 1,
     alphabet_list(Size1, AlphaList),
