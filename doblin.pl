@@ -137,7 +137,7 @@ create_empty_row(Cols, [' '|Rest]) :-
 % Gera o tabuleiro embaralhado de acordo com o tamanho (6x6 ou 8x8)
 create_shuffle_board(Rows, Cols, Board) :-
     % Cria listas de números e letras conforme o tamanho do tabuleiro
-    numlist(1, Cols, Colunas),
+    num_list(1, Cols, Colunas),
     alphabet_list(Rows, Letras),
     
     % Embaralha as colunas e as letras
@@ -270,7 +270,7 @@ read_entry([Letra, Numero],game_state(B1,B2,P)) :-
     (   member(Letra, AlphaList)  % Verifica se a letra está dentro de A-F
     ->  true
     ;   write('Letra inválida! A letra deve ser entre A e F. Tente novamente.'), nl,
-        read_entry([Letra, Numero])  % Se a letra for inválida, pede a entrada novamente
+        read_entry([Letra, Numero],game_state(B1,B2,P)),  % Se a letra for inválida, pede a entrada novamente
     ),
     
     num_list(1,Size1,NumList),
@@ -284,7 +284,7 @@ read_entry([Letra, Numero],game_state(B1,B2,P)) :-
     (   member(Numero, NumList)  % Verifica se o número está dentro do intervalo 1-6
     ->  true
     ;   write('Número inválido! O número deve ser entre 1 e 6. Tente novamente.'), nl,
-        read_entry([Letra, Numero])  % Se o número for inválido, pede a entrada novamente
+        read_entry([Letra, Numero],game_state(B1,B2,P))  % Se o número for inválido, pede a entrada novamente
     ).
 
 % Gera uma lista de números de 1 até N
@@ -425,7 +425,7 @@ initial_state_preenchido(GameConfig, game_state(BoardInicial, BoardEmbaralhado, 
 
 % Cria um tabuleiro preenchido alternadamente com 'x' e 'o'.
 create_filled_board(Rows, Cols, Tabuleiro) :-
-    numlist(1, Rows, RowNumbers),
+    num_list(1, Rows, RowNumbers),
     alphabet_list(Rows, Letras),
     Tabuleiro = [[' ' | RowNumbers] | Linhas],
     create_filled_rows(Letras, Cols, Linhas).
