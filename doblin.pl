@@ -13,10 +13,7 @@ game_menu :-
     write('3. Jogar (PC/H)'), nl,
     write('4. Jogar (PC/PC)'), nl,
     write('Escolha uma opcao: '),
-    get_char(Option),  % Usa get_char para ler a opção como caractere
-    get_char(_),
-    char_code(Option, Code),  % Converte o caractere para código ASCII
-    Number is Code - 48,  % Converte o código ASCII para o número correspondente
+    get_valid_option(Number, [1,2,3,4]),
     handle_option(Number).
 
 % Trata a escolha do menu
@@ -33,20 +30,41 @@ setup_game(Player1Type, Player2Type) :-
     write('Escolha o tamanho do tabuleiro: '), nl,
     write('1. 6x6'), nl,
     write('2. 8x8'), nl,
-    get_char(Option),
-    get_char(_),
-    char_code(Option, Code),
-    Number is Code-48,
+    get_valid_option(Number, [1,2]), 
     write('Configurando o jogo...'), nl,
     GameConfig = [player1(Player1Type), player2(Player2Type), board_size(Number)],
     initial_state(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
+get_valid_option(Number, Valid) :-
+    get_char(Option),
+    get_char(Pending),            % Lê o próximo caractere no buffer
+    (   Pending \= '\n'           % Verifica se a entrada contém mais de um caractere
+    ->  write('Invalid Option! Input must be a single character.'), nl,
+        clear_input_buffer,       % Limpa o buffer para evitar problemas
+        get_valid_option(Number, Valid)
+    ;   char_code(Option, Code),
+        NumberTemp is Code - 48,  % Converte o caractere para número
+        (   member(NumberTemp, Valid)  % Verifica se a opção é válida
+        ->  Number = NumberTemp
+        ;   length(Valid, Size),
+            format('Invalid Option! Choose Number (1-~w): ', Size), nl,
+            get_valid_option(Number, Valid)
+        )
+    ).
+
+% Limpa o restante do buffer de entrada
+clear_input_buffer :-
+    get_char(Char),
+    (Char = '\n' -> true ; clear_input_buffer).
+
+
+
 game_loop(GameState):-
     display_game(GameState),
     game_over(GameState), !.
 game_loop(GameState):-
-    read_entry(Coordenadas,GameState),
+    read_input(Coordenadas,GameState),
     move(GameState, Coordenadas, NewGameState),
     game_loop(NewGameState).
 
@@ -106,7 +124,6 @@ initial_state(GameConfig, game_state(Board1, Board2, player1)) :-
 % Determina o número de linhas e colunas com base na opção escolhida
 get_board_size(1, 6, 6). % Opção 1 -> Tabuleiro 6x6
 get_board_size(2, 8, 8). % Opção 2 -> Tabuleiro 8x8
-get_board_size(_, 3, 3). % Opção padrão -> Tabuleiro 3x3 (fallback)
 
 % Cria um tabuleiro vazio (lista de listas) com o tamanho especificado, incluindo cabeçalho e letras.
 /*
@@ -258,33 +275,45 @@ within_bounds(Board, Row, Col) :-
 
 
 
-read_entry([Letra, Numero],game_state(B1,B2,P)) :-
-    length(B1,Size),  
-    Size1 is Size - 1,           % To get the number of rows of the board
-    alphabet_list(Size1,AlphaList),
+read_input([Letra, Numero], game_state(B1, B2, P)) :-
+    length(B1, Size),
+    Size1 is Size - 1,
+    alphabet_list(Size1, AlphaList),
     AlphaList = [FirstLetter|_],
-    last(_,LastLetter,AlphaList),
-    format('Choose letter (~w-~w): ', [FirstLetter, LastLetter]),
-    get_char(Letra),       % Lê um caractere para a linha
-    get_char(_),           % Descarta o '\n' pendente no buffer  
-    (   member(Letra, AlphaList)  % Verifica se a letra está dentro de A-F
-    ->  true
-    ;   write('Letra inválida! A letra deve ser entre A e F. Tente novamente.'), nl,
-        read_entry([Letra, Numero],game_state(B1,B2,P)),  % Se a letra for inválida, pede a entrada novamente
-    ),
-    
-    num_list(1,Size1,NumList),
+    last(_, LastLetter, AlphaList),
+    get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra), 
+    num_list(1, Size1, NumList),
     NumList = [FirstNumber|_],
-    last(_,LastNumber,NumList),
+    last(_, LastNumber, NumList),
     format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
-    get_char(NumChar),     % Lê o número como caractere
-    get_char(_),           % Descarta o '\n' pendente no buffer
+    get_valid_option(Numero, NumList). 
+
+get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra) :-
+    format('Choose letter (~w-~w): ', [FirstLetter, LastLetter]),
+    get_char(LetraTemp),           
+    get_char(Pending),              
+    (   Pending \= '\n'            
+    ->  write('Invalid input! Input must be a single letter.'), nl,
+        clear_input_buffer,        
+        get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra)
+    ;   (   member(LetraTemp, AlphaList)  
+        ->  Letra = LetraTemp            
+        ;   write('Letra inválida! A letra deve ser válida.'), nl,
+            get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra)
+        )
+    ).
+
+
+get_valid_number(NumList, FirstNumber, LastNumber, Numero) :-
+    format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
+    get_char(NumChar),            
+    get_char(_),                  
     char_code(NumChar, NumCode),
-    Numero is NumCode - 48,  % Converte o caractere do número para inteiro
-    (   member(Numero, NumList)  % Verifica se o número está dentro do intervalo 1-6
-    ->  true
-    ;   write('Número inválido! O número deve ser entre 1 e 6. Tente novamente.'), nl,
-        read_entry([Letra, Numero],game_state(B1,B2,P))  % Se o número for inválido, pede a entrada novamente
+    NumeroTemp is NumCode - 48,       
+    (   member(NumeroTemp, NumList)  
+    ->  Numero = NumeroTemp                    
+    ;   write('Número inválido! O número deve ser válido.'), nl,
+        get_valid_number(NumList, FirstNumber, LastNumber, Numero) 
     ).
 
 % Gera uma lista de números de 1 até N
