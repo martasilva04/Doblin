@@ -14,22 +14,30 @@ game_menu :-
     write('4. Jogar (PC/PC)'), nl,
     write('Escolha uma opcao: '),
     get_valid_option(Type, [1,2,3,4]),
+    handle_option(Type),
     write('Escolha o tamanho do tabuleiro: '), nl,
     write('1. 6x6'), nl,
     write('2. 8x8'), nl,
     get_valid_option(Size, [1,2]), 
-    handle_option(Type, Size).
+    setup_game(Size).
 
-% Trata a escolha do menu
-handle_option(1, Size) :- setup_game(human, human, Size).
-handle_option(2, Size) :- setup_game(human, computer, Size).
-handle_option(3, Size) :- setup_game(computer, human, Size).
-handle_option(4, Size) :- setup_game(computer, computer, Size).
+handle_option(1):-
+    asserta((difficulty(player1, 0))),
+    asserta((difficulty(player2, 0))).
+handle_option(2):-
+    asserta((difficulty(player1, 0))),
+    choose_difficulty(player2).
+handle_option(3):-
+    choose_difficulty(player1),
+    asserta((difficulty(player2, 0))).
+handle_option(4):-
+    choose_difficulty(player1),
+    choose_difficulty(player2).
 
 % Configura o jogo de acordo com os tipos dos jogadores
-setup_game(Player1Type, Player2Type, Size) :- 
+setup_game(Size) :- 
     write('Configurando o jogo...'), nl,
-    GameConfig = [player1(Player1Type), player2(Player2Type), board_size(Size)],
+    GameConfig =  [player1, player2, board_size(Size)],
     initial_state(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
@@ -61,9 +69,25 @@ game_loop(GameState):-
     display_game(GameState),
     game_over(GameState), !.
 game_loop(GameState):-
-    read_input(Coordenadas,GameState),
+    choose_move(GameState, Coordenadas),
     move(GameState, Coordenadas, NewGameState),
     game_loop(NewGameState).
+
+choose_move(game_state(B1, B2, P, S), Move):-
+    difficulty(P, 0),
+    write(P), nl,
+    read_input(Move, game_state(B1, B2, P, S)).
+choose_move(game_state(B1, B2, P, S), Move):-
+    difficulty(P, 1),
+    write(P), nl,
+    valid_moves(B1, ValidMoves),
+    random_member(Move, ValidMoves).
+
+choose_move(game_state(B1, B2, P, S), Move):-
+    difficulty(P, 2),
+    write('nao sei lol'),
+    Move = [A, 2].
+
 
 game_over(game_state(T1, T2, P, _S)):-
     board_completed(T1),
@@ -328,13 +352,17 @@ num_list(M, N, [M|Rest]) :-
 % Calcula os pontos de um tabuleiro
 calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
     % Calcula pontos de linhas horizontais
-    findall(1, linha_completa(Tabuleiro, Simbolo), LinhasPontos),
+    findall(1, (linha_completa(Tabuleiro, Simbolo)), , LinhasPontos),
+    write('LinhasPoNTOS:'), write(LinhasPontos),nl,
     % Calcula pontos de colunas verticais
     findall(1, coluna_completa(Tabuleiro, Simbolo), ColunasPontos),
+    write('cOlunasPoNTOS:'),write(ColunasPontos),nl,
     % Calcula pontos de quadrados 2x2
     findall(1, quadrado_completo(Tabuleiro, Simbolo), QuadradosPontos),
+    write(QuadradosPontos),nl,
     % Calcula pontos de diagonais
     findall(1, diagonal_completa(Tabuleiro, Simbolo), DiagonaisPontos),
+    write(DiagonaisPontos),nl,
     % Soma todos os pontos
     length(LinhasPontos, PontosLinhas),
     length(ColunasPontos, PontosColunas),
@@ -345,7 +373,8 @@ calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
 % Verifica se uma linha está completa
 linha_completa(Tabuleiro, Simbolo) :-
     member(Linha, Tabuleiro),
-    sublist([Simbolo, Simbolo, Simbolo, Simbolo], Linha).
+    sublist([Simbolo, Simbolo, Simbolo, Simbolo], Linha), 
+    
 
 % Verifica se uma coluna está completa
 coluna_completa(Tabuleiro, Simbolo) :-
@@ -436,6 +465,65 @@ between(Min, Max, N) :-
     Next is Min + 1,
     between(Next, Max, N).
 
+alphabet_list(N, List) :-
+    N > 0,
+    findall(Char, (between(1, N, X), nth1(X, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'], Char)), List).
+
+
+
+% utils
+
+% difficulty(+Bot,-Difficulty)
+% Find the Bot difficulty
+:- dynamic difficulty/2.
+
+
+% choose_difficulty(+Bot)
+% Choose Bot difficulty (1 or 2)
+choose_difficulty(Bot) :-
+    format('Please select ~a status:\n', [Bot]),
+    write('1 - Random\n'),
+    write('2 - Greedy\n'),
+    get_valid_option(Option, [1,2]), !,
+    asserta((difficulty(Bot, Option))).
+
+
+% valid_moves(+Board, -EmptyCells)
+% Encontra as coordenadas de todas as células vazias no tabuleiro (de acordo com letras e números no tabuleiro)
+valid_moves(Board, EmptyCells) :-
+    % Identificar as letras e números do tabuleiro
+    nth0(0, Board, HeaderRow), % Primeira linha contém os números das colunas
+    exclude(=([]), HeaderRow, Numbers), % Remove elementos vazios da linha de cabeçalho
+    tail(Board, Rows), % Remove a linha de cabeçalho do resto do tabuleiro
+    findall([Letra, Numero],
+        (   nth0(RowIndex, Rows, Row),   % Iterar sobre as linhas do tabuleiro
+            nth0(ColIndex, Row, Cell),  % Iterar sobre as colunas
+            Cell = ' ',                 % Verificar se a célula está vazia
+            nth0(RowIndex, Rows, [Letra|_]), % Obter a letra da linha atual
+            nth0(ColIndex, HeaderRow, Numero) % Obter o número da coluna
+        ),
+        EmptyCells).
+
+% tail(+List, -Tail)
+% Retorna o resto da lista, ignorando o primeiro elemento
+tail([_|T], T).
+
+
+
+%testar
+
+main(ScoreX):-
+    Board = [
+        [_, 6, 1, 5, 2, 4, 3], % Cabeçalho
+        [C, o, o, o, o, o, o],
+        [A, x, x, x, x, o, o],
+        [F, o, o, o, o, o, o],
+        [D, o, o, o, o, o, o],
+        [E, o, o, o, o, o, o],
+        [B, o, o, o, o, o, o]
+    ],
+    %valid_moves(Board, EmptyCells).
+    calcular_pontos(Board, x, ScoreX).
 
 
 % initial_state/2
@@ -483,8 +571,3 @@ shuffle_board(Board, ShuffledBoard) :-
     random_permutation(Rows, ShuffledRows),
     % Adiciona o cabeçalho de volta
     ShuffledBoard = [Header | ShuffledRows].
-
-
-alphabet_list(N, List) :-
-    N > 0,
-    findall(Char, (between(1, N, X), nth1(X, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'], Char)), List).
