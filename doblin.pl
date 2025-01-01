@@ -83,11 +83,76 @@ choose_move(game_state(B1, B2, P, S), Move):-
     valid_moves(B1, ValidMoves),
     random_member(Move, ValidMoves).
 
-choose_move(game_state(B1, B2, P, S), Move):-
-    difficulty(P, 2),
-    write('nao sei lol'),
-    Move = [A, 2].
+%greedy bot 
 
+choose_move(game_state(B1, B2, player2, S), Move):-
+    difficulty(P, 2),
+    valid_moves(B2, ValidMoves),
+    get_next_symbol(S, NewSymbol),
+    findall(
+        NewScore1-M,
+        (
+            member(M, ValidMoves),
+            move(game_state(B1, B2, player2, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+            board_score(NewB2, NewScore1)
+        ),
+        ScoreMoves1
+    ),
+
+    board_score(B2, CurrentScore),
+    max_member(Score1-Move1, ScoreMoves1),
+    (
+        Score1 > CurrentScore -> Move = Move1
+    ;   
+        findall(
+            NewScore2-M, 
+            (
+                member(M, ValidMoves), 
+                move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+                board_score(NewB2, NewScore2)
+            ), 
+            ScoreMoves2
+        ),
+        min_member(_-Move, ScoreMoves2)
+    ).
+
+
+choose_move(game_state(B1, B2, player1, S), Move):-
+    difficulty(P, 2),
+    valid_moves(B2, ValidMoves),
+    get_next_symbol(S, NewSymbol),
+    findall(
+        NewScore1-M,
+        (
+            member(M, ValidMoves),
+            move(game_state(B1, B2, player1, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+            board_score(NewB2, NewScore1)
+        ),
+        ScoreMoves1
+    ),
+
+    board_score(B2, CurrentScore),
+    max_member(Score1-Move1, ScoreMoves1),
+    (
+        Score1 > CurrentScore -> Move = Move1
+    ;   
+        findall(
+            NewScore2-M, 
+            (
+                member(M, ValidMoves), 
+                move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+                board_score(NewB2, NewScore2)
+            ), 
+            ScoreMoves2
+        ),
+        min_member(_-Move, ScoreMoves2)
+    ).
+
+
+board_score(Board, Score):-
+    calcular_pontos(Board, x, ScoreX),
+    calcular_pontos(Board, o, ScoreO),
+    Score is ScoreX+ScoreO.
 
 game_over(game_state(T1, T2, P, _S)):-
     board_completed(T1),
@@ -145,19 +210,6 @@ initial_state(GameConfig, game_state(Board1, Board2, player1, x)) :-
 % Determina o número de linhas e colunas com base na opção escolhida
 get_board_size(1, 6, 6). % Opção 1 -> Tabuleiro 6x6
 get_board_size(2, 8, 8). % Opção 2 -> Tabuleiro 8x8
-
-% Cria um tabuleiro vazio (lista de listas) com o tamanho especificado, incluindo cabeçalho e letras.
-/*
-create_empty_board(Rows, Cols, Tabuleiro) :-
-    % Gera os números do cabeçalho
-    numlist(1, Cols, Colunas),
-    % Gera as letras para as linhas
-    alphabet_list(Rows, Letras),
-    % Adiciona o cabeçalho no topo
-    Tabuleiro = [[' ' | Colunas] | Linhas],
-    % Cria as linhas com letras e células vazias
-    create_lettered_rows(Letras, Cols, Linhas). 
-*/
 
 % Cria linhas com letras na borda esquerda e células vazias.
 create_lettered_rows([], _, []). % Caso base: sem letras, sem linhas.
@@ -356,7 +408,7 @@ calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
     %write('LinhasPoNTOS:'), write(LinhasPontos),nl,
     % Calcula pontos de colunas verticais
     findall(1, coluna_completa(Tabuleiro, Simbolo), ColunasPontos),
-    %write('cOlunasPoNTOS:'), write(ColunasPontos),nl,
+    %write('cOlunasPoNTOS:'),write(ColunasPontos),nl,
     % Calcula pontos de quadrados 2x2
     findall(1, quadrado_completo(Tabuleiro, Simbolo), QuadradosPontos),
     %write(QuadradosPontos),nl,
@@ -379,7 +431,6 @@ linha_completa(Tabuleiro, Simbolo) :-
 % Verifica se uma coluna está completa
 coluna_completa(Tabuleiro, Simbolo) :-
     transpose(Tabuleiro, TabuleiroTransposto),
-    %write(TabuleiroTransposto),
     linha_completa(TabuleiroTransposto, Simbolo).
 
 % Verifica se um quadrado 2x2 está completo
@@ -456,8 +507,8 @@ lists_firsts_rests([[F|Os]|Rest], [F|Fs], [Os|Oss]) :-
 
 % Define se uma lista é sublista de outra
 sublist(Sub, List) :-
-    append(_, L2, List),
-    append(Sub, _, L2).
+    append(_, Rest, List),
+    append(Sub, _, Rest).
 
 % Gera números de Min até Max
 between(Min, Max, Min) :- Min =< Max.
