@@ -352,17 +352,17 @@ num_list(M, N, [M|Rest]) :-
 % Calcula os pontos de um tabuleiro
 calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
     % Calcula pontos de linhas horizontais
-    findall(1, (linha_completa(Tabuleiro, Simbolo)), , LinhasPontos),
-    write('LinhasPoNTOS:'), write(LinhasPontos),nl,
+    findall(1, linha_completa(Tabuleiro, Simbolo), LinhasPontos),
+    %write('LinhasPoNTOS:'), write(LinhasPontos),nl,
     % Calcula pontos de colunas verticais
     findall(1, coluna_completa(Tabuleiro, Simbolo), ColunasPontos),
-    write('cOlunasPoNTOS:'),write(ColunasPontos),nl,
+    %write('cOlunasPoNTOS:'), write(ColunasPontos),nl,
     % Calcula pontos de quadrados 2x2
     findall(1, quadrado_completo(Tabuleiro, Simbolo), QuadradosPontos),
-    write(QuadradosPontos),nl,
+    %write(QuadradosPontos),nl,
     % Calcula pontos de diagonais
     findall(1, diagonal_completa(Tabuleiro, Simbolo), DiagonaisPontos),
-    write(DiagonaisPontos),nl,
+    %write(DiagonaisPontos),nl,
     % Soma todos os pontos
     length(LinhasPontos, PontosLinhas),
     length(ColunasPontos, PontosColunas),
@@ -373,12 +373,13 @@ calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
 % Verifica se uma linha está completa
 linha_completa(Tabuleiro, Simbolo) :-
     member(Linha, Tabuleiro),
-    sublist([Simbolo, Simbolo, Simbolo, Simbolo], Linha), 
+    sublist([Simbolo, Simbolo, Simbolo, Simbolo], Linha).
     
 
 % Verifica se uma coluna está completa
 coluna_completa(Tabuleiro, Simbolo) :-
     transpose(Tabuleiro, TabuleiroTransposto),
+    %write(TabuleiroTransposto),
     linha_completa(TabuleiroTransposto, Simbolo).
 
 % Verifica se um quadrado 2x2 está completo
@@ -455,8 +456,8 @@ lists_firsts_rests([[F|Os]|Rest], [F|Fs], [Os|Oss]) :-
 
 % Define se uma lista é sublista de outra
 sublist(Sub, List) :-
-    append(_, Rest, List),
-    append(Sub, _, Rest).
+    append(_, L2, List),
+    append(Sub, _, L2).
 
 % Gera números de Min até Max
 between(Min, Max, Min) :- Min =< Max.
