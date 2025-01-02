@@ -28,8 +28,8 @@ handle_option(2):-
     asserta((difficulty(player1, 0))),
     choose_difficulty(player2).
 handle_option(3):-
-    choose_difficulty(player1),
-    asserta((difficulty(player2, 0))).
+    asserta((difficulty(player2, 0))),
+    choose_difficulty(player1).
 handle_option(4):-
     choose_difficulty(player1),
     choose_difficulty(player2).
@@ -85,10 +85,46 @@ choose_move(game_state(B1, B2, P, S), Move):-
 
 %greedy bot 
 
+adjacent_or_diagonal(game_state(B1, B2, player2, S), Move) :-
+    move(game_state(B1, B2, player2, S), Move, game_state(NewB1, NewB2, NextPlayer, NextSymbol)), % Simulate the move.
+    adjacent_or_diagonal_check(NewB2, Move, S).
+
+
+% Check if the move places a symbol adjacent or diagonally near an existing symbol.
+adjacent_or_diagonal_check(Board, Move, S) :-
+    % Extract the coordinates of the move.
+    coordenadas_para_indices_segundo(Move, Board, X, Y),
+    % Check for adjacency or diagonal proximity.
+    (
+        adjacent(X, Y, X1, Y1),
+        %write('X: '),write(X1),nl,write('Y: '),write(Y1),nl,
+
+        symbol_at(Board, X1, Y1, S)
+    ).
+
+
+% Define adjacency and diagonal positions.
+adjacent(X, Y, X1, Y1) :-
+    member(DX, [-1, 0, 1]), % Diferença para X.
+    member(DY, [-1, 0, 1]), % Diferença para Y.
+    (DX \= 0; DY \= 0),     % Exclui (0, 0), ou seja, a mesma posição.
+    X1 is X + DX,           % Calcula X1.
+    Y1 is Y + DY.
+
+symbol_at(Board, X, Y, Symbol) :-
+    nth0(X, Board, Row), 
+    %write(Row),nl,     % Get the Y-th row (1-based indexing).
+    nth0(Y, Row, Symbol).
+    %,write(S), nl,
+    %S=Symbol.
+
+
 choose_move(game_state(B1, B2, player2, S), Move):-
     difficulty(P, 2),
     valid_moves(B2, ValidMoves),
+    exclude(adjacent_or_diagonal(game_state(B1, B2, player2, S)), ValidMoves, GreedyMoves),
     get_next_symbol(S, NewSymbol),
+    %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
     findall(
         NewScore1-M,
         (
@@ -101,31 +137,38 @@ choose_move(game_state(B1, B2, player2, S), Move):-
 
     board_score(B2, CurrentScore),
     max_member(Score1-Move1, ScoreMoves1),
-    (
-        Score1 > CurrentScore -> Move = Move1
+    (  
+        Score1 > CurrentScore -> Move = Move1  
     ;   
-        findall(
-            NewScore2-M, 
-            (
-                member(M, ValidMoves), 
-                move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
-                board_score(NewB2, NewScore2)
-            ), 
-            ScoreMoves2
-        ),
-        min_member(_-Move, ScoreMoves2)
-    ).
+        (   % Caso contrário, escolhe de GreedyMoves se não estiver vazio.  
+            GreedyMoves \= [] ->  
+            random_member(Move, GreedyMoves)  
+        ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
+            findall(  
+                NewScore2-M,  
+                (  
+                    member(M, ValidMoves),  
+                    move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
+                    board_score(NewB2, NewScore2)  
+                ),  
+                ScoreMoves2  
+            ),  
+            min_member(_-Move, ScoreMoves2)  
+        )  
+    ).  
 
 
 choose_move(game_state(B1, B2, player1, S), Move):-
     difficulty(P, 2),
     valid_moves(B2, ValidMoves),
+    exclude(adjacent_or_diagonal(game_state(B1, B2, player2, S)), ValidMoves, GreedyMoves),
     get_next_symbol(S, NewSymbol),
+    %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
     findall(
         NewScore1-M,
         (
             member(M, ValidMoves),
-            move(game_state(B1, B2, player1, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+            move(game_state(B1, B2, player2, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
             board_score(NewB2, NewScore1)
         ),
         ScoreMoves1
@@ -133,19 +176,24 @@ choose_move(game_state(B1, B2, player1, S), Move):-
 
     board_score(B2, CurrentScore),
     max_member(Score1-Move1, ScoreMoves1),
-    (
-        Score1 > CurrentScore -> Move = Move1
+    (  
+        Score1 > CurrentScore -> Move = Move1  
     ;   
-        findall(
-            NewScore2-M, 
-            (
-                member(M, ValidMoves), 
-                move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
-                board_score(NewB2, NewScore2)
-            ), 
-            ScoreMoves2
-        ),
-        min_member(_-Move, ScoreMoves2)
+        (   % Caso contrário, escolhe de GreedyMoves se não estiver vazio.  
+            GreedyMoves \= [] ->  
+            random_member(Move, GreedyMoves)  
+        ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
+            findall(  
+                NewScore2-M,  
+                (  
+                    member(M, ValidMoves),  
+                    move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
+                    board_score(NewB2, NewScore2)  
+                ),  
+                ScoreMoves2  
+            ),  
+            min_member(_-Move, ScoreMoves2)  
+        )  
     ).
 
 
@@ -406,16 +454,12 @@ calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
     remove_header(Tabuleiro, NewBoard),
     % Calcula pontos de linhas horizontais
     findall(1, linha_completa(NewBoard, Simbolo), LinhasPontos),
-    write('LinhasPoNTOS:'), write(LinhasPontos),nl,
     % Calcula pontos de colunas verticais
     findall(1, coluna_completa(NewBoard, Simbolo), ColunasPontos),
-    write('cOlunasPoNTOS:'),write(ColunasPontos),nl,
     % Calcula pontos de quadrados 2x2
     findall(1, quadrado_completo(NewBoard, Simbolo), QuadradosPontos),
-    write(QuadradosPontos),nl,
     % Calcula pontos de diagonais
     findall(1, diagonal_completa(NewBoard, Simbolo), DiagonaisPontos),
-    write(DiagonaisPontos),nl,
     % Soma todos os pontos
     length(LinhasPontos, PontosLinhas),
     length(ColunasPontos, PontosColunas),
@@ -578,18 +622,24 @@ remove_header(Board, NewBoard):-
 
 %testar
 
-main(ScoreX):-
+main:-
     Board = [
-    [' ', 6, 1, 5, 2, 4, 3], % Cabeçalho
-    [ A, 'x', 'o', 'x', 'x', 'o', 'x'], % Linha 1
-    [ B, 'o', 'x', 'o', 'x', 'x', 'x'], % Linha 2
-    [ C, 'o', 'o', 'x', 'x', 'x', 'x'], % Linha 3
-    [ D, 'x', 'o', 'x', 'o', 'x', 'x'], % Linha 4
-    [ E, 'x', 'o', 'x', 'x', 'o', 'x'], % Linha 5
-    [ F, 'x', 'o', 'x', 'x', 'o', 'x']  % Linha 6
+        [' ', 1  ,  2 ,  3 ,  4 ,  5 ,  6 ], % Cabeçalho (colunas)
+        ['E', 'x', 'o', 'x', 'x', 'o', 'x'], % Linha 1
+        ['C', 'o', 'o', 'o', 'x', 'o', 'x'], % Linha 2
+        ['F', ' ', 'o', 'x', 'x', 'x', 'o'], % Linha 3
+        ['A', 'o', 'o', 'x', 'o', 'x', 'x'], % Linha 4
+        ['B', 'x', 'o', 'x', 'x', 'o', 'x'], % Linha 5
+        ['D', 'x', 'o', 'x', 'x', 'o', 'x']  % Linha 6
     ],
     %valid_moves(Board, EmptyCells).
-    calcular_pontos(Board, x, ScoreX).
+
+    valid_moves(Board, ValidMoves),
+    write(ValidMoves),nl,
+    exclude(adjacent_or_diagonal(game_state(Board, Board, player2, 'x')), ValidMoves, GreedyMoves),
+    write('Greedy: '), nl, write(GreedyMoves),nl.
+    
+    %calcular_pontos(Board, x, ScoreX).
 
 
 % initial_state/2
