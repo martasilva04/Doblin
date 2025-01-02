@@ -169,10 +169,10 @@ game_over(game_state(T1, T2, P, _S)):-
 
     (   
         ScoreB1 < ScoreB2 ->
-        write('Player 1 (X) won!')
+        write('Player 1 won!')
     ;   
         ScoreB1 > ScoreB2 ->
-        write('Player 2 (O) won!')
+        write('Player 2 won!')
     ;   
         write('Draw')
     ).
