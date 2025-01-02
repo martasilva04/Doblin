@@ -403,18 +403,19 @@ num_list(M, N, [M|Rest]) :-
 
 % Calcula os pontos de um tabuleiro
 calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
+    remove_header(Tabuleiro, NewBoard),
     % Calcula pontos de linhas horizontais
-    findall(1, linha_completa(Tabuleiro, Simbolo), LinhasPontos),
-    %write('LinhasPoNTOS:'), write(LinhasPontos),nl,
+    findall(1, linha_completa(NewBoard, Simbolo), LinhasPontos),
+    write('LinhasPoNTOS:'), write(LinhasPontos),nl,
     % Calcula pontos de colunas verticais
-    findall(1, coluna_completa(Tabuleiro, Simbolo), ColunasPontos),
-    %write('cOlunasPoNTOS:'),write(ColunasPontos),nl,
+    findall(1, coluna_completa(NewBoard, Simbolo), ColunasPontos),
+    write('cOlunasPoNTOS:'),write(ColunasPontos),nl,
     % Calcula pontos de quadrados 2x2
-    findall(1, quadrado_completo(Tabuleiro, Simbolo), QuadradosPontos),
-    %write(QuadradosPontos),nl,
+    findall(1, quadrado_completo(NewBoard, Simbolo), QuadradosPontos),
+    write(QuadradosPontos),nl,
     % Calcula pontos de diagonais
-    findall(1, diagonal_completa(Tabuleiro, Simbolo), DiagonaisPontos),
-    %write(DiagonaisPontos),nl,
+    findall(1, diagonal_completa(NewBoard, Simbolo), DiagonaisPontos),
+    write(DiagonaisPontos),nl,
     % Soma todos os pontos
     length(LinhasPontos, PontosLinhas),
     length(ColunasPontos, PontosColunas),
@@ -435,8 +436,9 @@ coluna_completa(Tabuleiro, Simbolo) :-
 
 % Verifica se um quadrado 2x2 está completo
 quadrado_completo(Tabuleiro, Simbolo) :-
-    between(1, 5, Linha), % Verifica as posições das linhas (1 a 5)
-    between(1, 5, Coluna), % Verifica as posições das colunas (1 a 5)
+    length(Tabuleiro,Size),
+    between(1, Size, Linha), 
+    between(1, Size, Coluna), 
     nth1(Linha, Tabuleiro, Linha1),
     nth1(Coluna, Linha1, Simbolo),
     Linha2Index is Linha + 1,
@@ -455,8 +457,10 @@ diagonal_completa(Tabuleiro, Simbolo) :-
 
 % Verifica se uma diagonal normal (esquerda para direita) está completa
 diagonal_normal(Tabuleiro, Simbolo) :-
-    between(1, 3, Linha), % As diagonais normais começam de 1 a 3
-    between(1, 3, Coluna), % As diagonais normais começam de 1 a 3
+    length(Tabuleiro, Size), 
+    Max is Size - 3, 
+    between(1, Max, Linha), 
+    between(1, Max, Coluna), 
     nth1(Linha, Tabuleiro, Linha1),
     nth1(Coluna, Linha1, Simbolo),
     Linha2 is Linha + 1,
@@ -474,8 +478,10 @@ diagonal_normal(Tabuleiro, Simbolo) :-
 
 % Verifica se uma diagonal invertida (direita para esquerda) está completa
 diagonal_invertida(Tabuleiro, Simbolo) :-
-    between(1, 3, Linha), % As diagonais invertidas começam de 1 a 3
-    between(4, 6, Coluna), % As diagonais invertidas começam de 4 a 6
+    length(Tabuleiro, Size), 
+    Max is Size - 3,
+    between(1, Max, Linha), % As diagonais invertidas começam de 1 a 3
+    between(4, Size, Coluna), % As diagonais invertidas começam de 4 a 6
     nth1(Linha, Tabuleiro, Linha1),
     nth1(Coluna, Linha1, Simbolo),
     Linha2 is Linha + 1,
@@ -561,18 +567,26 @@ valid_moves(Board, EmptyCells) :-
 tail([_|T], T).
 
 
+% remove o cabeçalho do tabuleiro
+remove_header(Board, NewBoard):-
+    Board=[_|BoardAux],
+    transpose(BoardAux,TransposeBoard),
+    TransposeBoard=[_|NewBoard].
+
+
+
 
 %testar
 
 main(ScoreX):-
     Board = [
-        [_, 6, 1, 5, 2, 4, 3], % Cabeçalho
-        [C, o, o, o, o, o, o],
-        [A, x, x, x, x, o, o],
-        [F, o, o, o, o, o, o],
-        [D, o, o, o, o, o, o],
-        [E, o, o, o, o, o, o],
-        [B, o, o, o, o, o, o]
+    [' ', 6, 1, 5, 2, 4, 3], % Cabeçalho
+    [ A, 'x', 'o', 'x', 'x', 'o', 'x'], % Linha 1
+    [ B, 'o', 'x', 'o', 'x', 'x', 'x'], % Linha 2
+    [ C, 'o', 'o', 'x', 'x', 'x', 'x'], % Linha 3
+    [ D, 'x', 'o', 'x', 'o', 'x', 'x'], % Linha 4
+    [ E, 'x', 'o', 'x', 'x', 'o', 'x'], % Linha 5
+    [ F, 'x', 'o', 'x', 'x', 'o', 'x']  % Linha 6
     ],
     %valid_moves(Board, EmptyCells).
     calcular_pontos(Board, x, ScoreX).
