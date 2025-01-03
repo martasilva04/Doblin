@@ -130,11 +130,11 @@ choose_move(game_state(B1, B2, player2, S), Move):-
     get_next_symbol(S, NewSymbol),
     %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
     findall(
-        NewScore1-M,
+        Value-M,
         (
             member(M, ValidMoves),
             move(game_state(B1, B2, player2, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
-            board_score(NewB2, NewScore1)
+            value(NextGameState, player2, Value)
         ),
         ScoreMoves1
     ),
@@ -147,28 +147,22 @@ choose_move(game_state(B1, B2, player2, S), Move):-
         (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
             GreedyMoves \= [] ->  
             findall(  
-                NewScore1-M,  
+                ValueOpponent-M,  
                 (  
                     member(M, GreedyMoves),  
                     move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
-                    board_score(NewB1, NewScore1)  
+                    value(NextGameState, player1, ValueOpponent) 
                 ),  
                 Score1Moves2  
             ),  
-            max_member(_-Move, Score1Moves2)  
+            min_member(_-Move, Score1Moves2)  
         ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
             findall(  
-                NewScore21-M,  
+                MinValue-M,  
                 (  
                     member(M, ValidMoves),  
                     move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
-                    board_score(NewB2, NewScore2),
-                    board_score(NewB1, NewScore1),
-                    (
-                        NewScore1>0 -> NewScore21 is NewScore2/NewScore1  
-                        ;
-                        NewScore21 is NewScore2
-                    )
+                    value(NextGameState, player1, MinValue)
                 ),  
                 ScoreMoves2  
             ),  
@@ -184,45 +178,40 @@ choose_move(game_state(B1, B2, player1, S), Move):-
     get_next_symbol(S, NewSymbol),
     %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
     findall(
-        NewScore1-M,
+        Value-M,
         (
             member(M, ValidMoves),
-            move(game_state(B1, B2, player1, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
-            board_score(NewB1, NewScore1)
+            move(game_state(B1, B2, player1, NewSymbol), M, NextGameState),
+            value(NextGameState, player1, Value)
         ),
         ScoreMoves1
     ),
 
     board_score(B1, CurrentScore),
     max_member(Score1-Move1, ScoreMoves1),
+    write(Score1),nl,
     (  
         Score1 > CurrentScore -> Move = Move1  
     ;   
         (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
             GreedyMoves \= [] ->  
             findall(  
-                NewScore1-M,  
+                ValueOpponent-M,  
                 (  
                     member(M, GreedyMoves),  
-                    move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
-                    board_score(NewB2, NewScore1)  
+                    move(game_state(B1, B2, player1, S), M, NextGameState),  
+                    value(NextGameState, player1, ValueOpponent)  
                 ),  
                 Score1Moves2  
             ),  
-            max_member(_-Move, Score1Moves2)  
+            min_member(_-Move, Score1Moves2)  
         ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
             findall(  
-                NewScore21-M,  
+                Value-M,  
                 (  
                     member(M, ValidMoves),  
-                    move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
-                    board_score(NewB2, NewScore2),
-                    board_score(NewB1, NewScore1),
-                    (
-                        NewScore2>0 -> NewScore21 is NewScore1/NewScore2   
-                        ;
-                        NewScore21 is NewScore1
-                    )
+                    move(game_state(B1, B2, player1, S), M, NewGameState),  
+                    value(NewGameState, player1, Value)
                 ),  
                 ScoreMoves11  
             ),  
@@ -230,6 +219,24 @@ choose_move(game_state(B1, B2, player1, S), Move):-
         )  
     ).  
 
+%o game state é tanto melhor quantos menos pontos tiver o player e mais o adversario, o estado do jogo é mais positivo quanto menor for o value
+value(game_state(B1, B2, P, S), player1, Value):-
+    board_score(B1, ScoreB1),
+    board_score(B2, ScoreB2),
+    (
+        ScoreB2 = 0 -> Value is ScoreB1 / 0.5
+        ;
+        Value is ScoreB1 / ScoreB2
+    ).
+
+value(game_state(B1, B2, P, S), player2, Value):-
+    board_score(B1, ScoreB1),
+    board_score(B2, ScoreB2),
+    (
+        ScoreB1 = 0 -> Value is ScoreB2 / 0.5
+        ;
+        Value is ScoreB2 / ScoreB1
+    ).
 
 
 board_score(Board, Score):-
