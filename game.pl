@@ -66,6 +66,7 @@ clear_input_buffer :-
 
 
 game_loop(GameState):-
+    clear_console,
     display_game(GameState),
     game_over(GameState), !.
 game_loop(GameState):-
@@ -729,3 +730,8 @@ shuffle_board(Board, ShuffledBoard) :-
     random_permutation(Rows, ShuffledRows),
     % Adiciona o cabeçalho de volta
     ShuffledBoard = [Header | ShuffledRows].
+
+% clear_console/0
+% Clears console
+clear_console:- 
+    write('\33\[2J').
