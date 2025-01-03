@@ -89,6 +89,10 @@ adjacent_or_diagonal(game_state(B1, B2, player2, S), Move) :-
     move(game_state(B1, B2, player2, S), Move, game_state(NewB1, NewB2, NextPlayer, NextSymbol)), % Simulate the move.
     adjacent_or_diagonal_check(NewB2, Move, S).
 
+adjacent_or_diagonal(game_state(B1, B2, player1, S), Move) :-
+    move(game_state(B1, B2, player1, S), Move, game_state(NewB1, NewB2, NextPlayer, NextSymbol)), % Simulate the move.
+    adjacent_or_diagonal_check(NewB2, Move, S).
+
 
 % Check if the move places a symbol adjacent or diagonally near an existing symbol.
 adjacent_or_diagonal_check(Board, Move, S) :-
@@ -120,7 +124,7 @@ symbol_at(Board, X, Y, Symbol) :-
 
 
 choose_move(game_state(B1, B2, player2, S), Move):-
-    difficulty(P, 2),
+    difficulty(player2, 2),
     valid_moves(B2, ValidMoves),
     exclude(adjacent_or_diagonal(game_state(B1, B2, player2, S)), ValidMoves, GreedyMoves),
     get_next_symbol(S, NewSymbol),
@@ -140,16 +144,31 @@ choose_move(game_state(B1, B2, player2, S), Move):-
     (  
         Score1 > CurrentScore -> Move = Move1  
     ;   
-        (   % Caso contrário, escolhe de GreedyMoves se não estiver vazio.  
+        (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
             GreedyMoves \= [] ->  
-            random_member(Move, GreedyMoves)  
+            findall(  
+                NewScore1-M,  
+                (  
+                    member(M, GreedyMoves),  
+                    move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
+                    board_score(NewB1, NewScore1)  
+                ),  
+                Score1Moves2  
+            ),  
+            max_member(_-Move, Score1Moves2)  
         ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
             findall(  
-                NewScore2-M,  
+                NewScore21-M,  
                 (  
                     member(M, ValidMoves),  
                     move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
-                    board_score(NewB2, NewScore2)  
+                    board_score(NewB2, NewScore2),
+                    board_score(NewB1, NewScore1),
+                    (
+                        NewScore1>0 -> NewScore21 is NewScore2/NewScore1  
+                        ;
+                        NewScore21 is NewScore2
+                    )
                 ),  
                 ScoreMoves2  
             ),  
@@ -159,42 +178,58 @@ choose_move(game_state(B1, B2, player2, S), Move):-
 
 
 choose_move(game_state(B1, B2, player1, S), Move):-
-    difficulty(P, 2),
-    valid_moves(B2, ValidMoves),
-    exclude(adjacent_or_diagonal(game_state(B1, B2, player2, S)), ValidMoves, GreedyMoves),
+    difficulty(player1, 2),
+    valid_moves(B1, ValidMoves),
+    exclude(adjacent_or_diagonal(game_state(B1, B2, player1, S)), ValidMoves, GreedyMoves),
     get_next_symbol(S, NewSymbol),
     %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
     findall(
         NewScore1-M,
         (
             member(M, ValidMoves),
-            move(game_state(B1, B2, player2, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
-            board_score(NewB2, NewScore1)
+            move(game_state(B1, B2, player1, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+            board_score(NewB1, NewScore1)
         ),
         ScoreMoves1
     ),
 
-    board_score(B2, CurrentScore),
+    board_score(B1, CurrentScore),
     max_member(Score1-Move1, ScoreMoves1),
     (  
         Score1 > CurrentScore -> Move = Move1  
     ;   
-        (   % Caso contrário, escolhe de GreedyMoves se não estiver vazio.  
+        (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
             GreedyMoves \= [] ->  
-            random_member(Move, GreedyMoves)  
+            findall(  
+                NewScore1-M,  
+                (  
+                    member(M, GreedyMoves),  
+                    move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
+                    board_score(NewB2, NewScore1)  
+                ),  
+                Score1Moves2  
+            ),  
+            max_member(_-Move, Score1Moves2)  
         ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
             findall(  
-                NewScore2-M,  
+                NewScore21-M,  
                 (  
                     member(M, ValidMoves),  
-                    move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
-                    board_score(NewB2, NewScore2)  
+                    move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),  
+                    board_score(NewB2, NewScore2),
+                    board_score(NewB1, NewScore1),
+                    (
+                        NewScore2>0 -> NewScore21 is NewScore1/NewScore2   
+                        ;
+                        NewScore21 is NewScore1
+                    )
                 ),  
-                ScoreMoves2  
+                ScoreMoves11  
             ),  
-            min_member(_-Move, ScoreMoves2)  
+            min_member(_-Move, ScoreMoves11)  
         )  
-    ).
+    ).  
+
 
 
 board_score(Board, Score):-
