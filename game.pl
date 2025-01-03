@@ -1,5 +1,6 @@
 :- use_module(library(random)).
 :- use_module(library(lists)).
+:- use_module(library(system)).
 
 % Predicado principal do jogo
 play :-
@@ -79,9 +80,13 @@ choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
         write(P), nl,
         read_input(Move, game_state(B1, B2, P, S, D1, D2))
     ;   Difficulty = 1 -> % Bot aleatório
+        write('Bot evaluating options...'),
+        sleep(3),
         valid_moves(B1, ValidMoves),
         random_member(Move, ValidMoves)
     ;   Difficulty = 2 -> % Bot Greedy
+        write('Bot evaluating options...'),
+        sleep(3),
         greedy_move(game_state(B1, B2, P, S, D1, D2), Move)
     ).
 
@@ -618,7 +623,7 @@ alphabet_list(N, List) :-
 
 % valid_moves(+Board, -EmptyCells)
 % Encontra as coordenadas de todas as células vazias no tabuleiro (de acordo com letras e números no tabuleiro)
-valid_moves(Board, EmptyCells) :-
+valid_moves(Board, ListOfMoves) :-
     % Identificar as letras e números do tabuleiro
     nth0(0, Board, HeaderRow), % Primeira linha contém os números das colunas
     exclude(=([]), HeaderRow, Numbers), % Remove elementos vazios da linha de cabeçalho
@@ -630,7 +635,7 @@ valid_moves(Board, EmptyCells) :-
             nth0(RowIndex, Rows, [Letra|_]), % Obter a letra da linha atual
             nth0(ColIndex, HeaderRow, Numero) % Obter o número da coluna
         ),
-        EmptyCells).
+        ListOfMoves).
 
 % tail(+List, -Tail)
 % Retorna o resto da lista, ignorando o primeiro elemento
