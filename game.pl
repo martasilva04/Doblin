@@ -14,31 +14,25 @@ game_menu :-
     write('4. Jogar (PC/PC)'), nl,
     write('Escolha uma opcao: '),
     get_valid_option(Type, [1,2,3,4]),
-    handle_option(Type),
+    handle_option(Type, Difficulty1, Difficulty2),
     write('Escolha o tamanho do tabuleiro: '), nl,
     write('1. 6x6'), nl,
     write('2. 8x8'), nl,
     get_valid_option(Size, [1,2]), 
-    setup_game(Size).
+    setup_game(Size, Difficulty1, Difficulty2).
 
-handle_option(1):-
-    asserta((difficulty(player1, 0))),
-    asserta((difficulty(player2, 0))).
-handle_option(2):-
-    asserta((difficulty(player1, 0))),
-    choose_difficulty(player2).
-handle_option(3):-
-    choose_difficulty(player1),
-    asserta((difficulty(player2, 0))).
-handle_option(4):-
-    choose_difficulty(player1),
-    choose_difficulty(player2).
+handle_option(1, 0, 0). % H/H
+handle_option(2, 0, Difficulty2) :- choose_difficulty(player2, Difficulty2). % H/PC
+handle_option(3, Difficulty1, 0) :- choose_difficulty(player1, Difficulty1). % PC/H
+handle_option(4, Difficulty1, Difficulty2) :- % PC/PC
+    choose_difficulty(player1, Difficulty1),
+    choose_difficulty(player2, Difficulty2).
 
 % Configura o jogo de acordo com os tipos dos jogadores
-setup_game(Size) :- 
+setup_game(Size, Difficulty1, Difficulty2) :- 
     write('Configurando o jogo...'), nl,
-    GameConfig =  [player1, player2, board_size(Size)],
-    initial_state(GameConfig, InitialGameState),
+    GameConfig = board_size(Size),
+    initial_state(GameConfig, Difficulty1, Difficulty2, InitialGameState),
     game_loop(InitialGameState).
 
 get_valid_option(Number, Valid) :-
@@ -63,7 +57,12 @@ clear_input_buffer :-
     get_char(Char),
     (Char = '\n' -> true ; clear_input_buffer).
 
-
+choose_difficulty(Bot, Difficulty) :-
+    format('Please select ~a status:\n', [Bot]),
+    write('1 - Random\n'),
+    write('2 - Greedy\n'),
+    get_valid_option(Option, [1,2]), !,
+    Difficulty = Option.
 
 game_loop(GameState):-
     display_game(GameState),
@@ -73,27 +72,28 @@ game_loop(GameState):-
     move(GameState, Coordenadas, NewGameState),
     game_loop(NewGameState).
 
-choose_move(game_state(B1, B2, P, S), Move):-
-    difficulty(P, 0),
-    write(P), nl,
-    read_input(Move, game_state(B1, B2, P, S)).
-choose_move(game_state(B1, B2, P, S), Move):-
-    difficulty(P, 1),
-    write(P), nl,
-    valid_moves(B1, ValidMoves),
-    random_member(Move, ValidMoves).
+choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
+    (P = player1 -> Difficulty = D1; Difficulty = D2),
+    (   Difficulty = 0 -> % Jogador humano
+        write(P), nl,
+        read_input(Move, game_state(B1, B2, P, S, D1, D2))
+    ;   Difficulty = 1 -> % Bot aleatório
+        valid_moves(B1, ValidMoves),
+        random_member(Move, ValidMoves)
+    ;   Difficulty = 2 -> % Bot Greedy
+        greedy_move(game_state(B1, B2, P, S, D1, D2), Move)
+    ).
 
 %greedy bot 
 
-choose_move(game_state(B1, B2, player2, S), Move):-
-    difficulty(P, 2),
+greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move):-
     valid_moves(B2, ValidMoves),
     get_next_symbol(S, NewSymbol),
     findall(
         NewScore1-M,
         (
             member(M, ValidMoves),
-            move(game_state(B1, B2, player2, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+            move(game_state(B1, B2, player2, NewSymbol, _D1, _D2), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol, _D1, _D2)),
             board_score(NewB2, NewScore1)
         ),
         ScoreMoves1
@@ -108,7 +108,7 @@ choose_move(game_state(B1, B2, player2, S), Move):-
             NewScore2-M, 
             (
                 member(M, ValidMoves), 
-                move(game_state(B1, B2, player2, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+                move(game_state(B1, B2, player2, S, _D1, _D2), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol, _D1, _D2)),
                 board_score(NewB2, NewScore2)
             ), 
             ScoreMoves2
@@ -117,15 +117,14 @@ choose_move(game_state(B1, B2, player2, S), Move):-
     ).
 
 
-choose_move(game_state(B1, B2, player1, S), Move):-
-    difficulty(P, 2),
+greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
     valid_moves(B2, ValidMoves),
     get_next_symbol(S, NewSymbol),
     findall(
         NewScore1-M,
         (
             member(M, ValidMoves),
-            move(game_state(B1, B2, player1, NewSymbol), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+            move(game_state(B1, B2, player1, NewSymbol, _D1, _D2), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol, _D1, _D2)),
             board_score(NewB2, NewScore1)
         ),
         ScoreMoves1
@@ -140,13 +139,24 @@ choose_move(game_state(B1, B2, player1, S), Move):-
             NewScore2-M, 
             (
                 member(M, ValidMoves), 
-                move(game_state(B1, B2, player1, S), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol)),
+                move(game_state(B1, B2, player1, S, _D1, _D2), M, game_state(NewB1, NewB2, NextPlayer, NextSymbol, _D1, _D2)),
                 board_score(NewB2, NewScore2)
             ), 
             ScoreMoves2
         ),
         min_member(_-Move, ScoreMoves2)
     ).
+
+% Predicado initial_state/4
+% Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
+initial_state(board_size(Option), Difficulty1, Difficulty2, game_state(Board1, Board2, player1, x, Difficulty1, Difficulty2)) :-
+    get_board_size(Option, Rows, Cols),
+    
+    % Gera o tabuleiro inicial
+    create_shuffle_board(Rows, Cols, Board1),
+    
+    % Gera o tabuleiro embaralhado
+    create_shuffle_board(Rows, Cols, Board2).
 
 
 board_score(Board, Score):-
@@ -154,7 +164,7 @@ board_score(Board, Score):-
     calcular_pontos(Board, o, ScoreO),
     Score is ScoreX+ScoreO.
 
-game_over(game_state(T1, T2, P, _S)):-
+game_over(game_state(T1, T2, P, _S, _D1, _D2)):-
     board_completed(T1),
     write('Fim de jogo! Calculando pontos...'), nl,
     calcular_pontos(T1, x, ScoreX1),
@@ -190,18 +200,6 @@ all_rows_completed([H|T]):-
 board_completed([[' '|FirstRow]|Rest]):-
     row_completed(FirstRow),
     all_rows_completed(Rest).
-
-% Predicado initial_state/2
-% Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
-initial_state(GameConfig, game_state(Board1, Board2, player1, x)) :-
-    member(board_size(Option), GameConfig),
-    get_board_size(Option, Rows, Cols),
-    
-    % Gera o tabuleiro inicial
-    create_shuffle_board(Rows, Cols, Board1),
-    
-    % Gera o tabuleiro embaralhado
-    create_shuffle_board(Rows, Cols, Board2).
 
 
 
@@ -245,7 +243,7 @@ create_shuffle_board(Rows, Cols, Board) :-
 
 % display_game(+GameState)
 % Exibe o estado atual do jogo com base no GameState atualizado.
-display_game(game_state(Board1, Board2, CurrentPlayer, Symbol)) :-
+display_game(game_state(Board1, Board2, CurrentPlayer, Symbol, _D1, _D2)) :-
     write('Board Player1:'), nl,
     display_board(Board1), nl,
     
@@ -266,7 +264,7 @@ display_board([Row|Rows]) :-
 
 % move(+GameState, +Move, -NewGameState)
 % Atualiza o estado do jogo com base no movimento do jogador.
-move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer, Symbol), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer,NewSymbol)) :-
+move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer, Symbol, _D1, _D2), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer,NewSymbol, _D1, _D2)) :-
     coordenadas_para_indices_segundo(Move, BoardInicial, LinhaIndex1, ColunaIndex1),
     atualizar_tabuleiro(BoardInicial, LinhaIndex1, ColunaIndex1, Symbol, NewBoardInicial),
     coordenadas_para_indices_segundo(Move, BoardEmbaralhado, LinhaIndex2, ColunaIndex2),
@@ -341,7 +339,7 @@ within_bounds(Board, Row, Col) :-
     Col > 0, Col =< NumCols.         % Verifica se a coluna está dentro dos limites
 
 
-read_input([Letra, Numero], game_state(B1, B2, P, S)) :-
+read_input([Letra, Numero], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
     length(B1, Size),
     Size1 is Size - 1,
     alphabet_list(Size1, AlphaList),
@@ -526,24 +524,6 @@ between(Min, Max, N) :-
 alphabet_list(N, List) :-
     N > 0,
     findall(Char, (between(1, N, X), nth1(X, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'], Char)), List).
-
-
-
-% utils
-
-% difficulty(+Bot,-Difficulty)
-% Find the Bot difficulty
-:- dynamic difficulty/2.
-
-
-% choose_difficulty(+Bot)
-% Choose Bot difficulty (1 or 2)
-choose_difficulty(Bot) :-
-    format('Please select ~a status:\n', [Bot]),
-    write('1 - Random\n'),
-    write('2 - Greedy\n'),
-    get_valid_option(Option, [1,2]), !,
-    asserta((difficulty(Bot, Option))).
 
 
 % valid_moves(+Board, -EmptyCells)
