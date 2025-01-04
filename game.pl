@@ -68,13 +68,16 @@ choose_difficulty(Bot, Difficulty) :-
 game_loop(GameState):-
     clear_console,
     display_game(GameState),
-    game_over(GameState), !.
+    game_over(GameState, Winner),
+    print_winner(Winner), !.
 game_loop(GameState):-
     choose_move(GameState, Coordenadas),
     move(GameState, Coordenadas, NewGameState),
     game_loop(NewGameState).
 
 choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
+    write('Your turn: '), write(P), nl,
+    format('Place a ~w', S), nl,
     (P = player1 -> Difficulty = D1; Difficulty = D2),
     (   Difficulty = 0 -> % Jogador humano
         write(P), nl,
@@ -263,28 +266,40 @@ board_score(Board, Score):-
     calcular_pontos(Board, o, ScoreO),
     Score is ScoreX+ScoreO.
 
-game_over(game_state(T1, T2, P, _S, _D1, _D2)):-
+game_over(game_state(T1, T2, _P, _S, _D1, _D2), Winner):-
     board_completed(T1),
-    write('Fim de jogo! Calculando pontos...'), nl,
     calcular_pontos(T1, x, ScoreX1),
     calcular_pontos(T1, o, ScoreO1),
     ScoreB1 is ScoreX1+ScoreO1,
-    write('Score Board1 (Player1): '), write(ScoreB1), nl,
 
     calcular_pontos(T2, x, ScoreX2),
     calcular_pontos(T2, o, ScoreO2),
     ScoreB2 is ScoreX2+ScoreO2,
-    write('Score Board2 (Player2): '), write(ScoreB2), nl,
+    print_results(ScoreB1, ScoreB2),
 
     (   
         ScoreB1 < ScoreB2 ->
-        write('Player 1 won!')
+        Winner = player1
     ;   
         ScoreB1 > ScoreB2 ->
-        write('Player 2 won!')
+        Winner = player2
     ;   
-        write('Draw')
+        Winner = draw
     ).
+
+print_results(ScoreB1, ScoreB2):-
+    write('End of game! Calculating points...'), nl,
+    write('Score Board1 (Player1): '), write(ScoreB1), nl,
+    write('Score Board2 (Player2): '), write(ScoreB2), nl.
+
+print_winner(player1):-
+    write('Player 1 won!').
+
+print_winner(player2):-
+    write('Player 2 won!').
+
+print_winner(draw):-
+    write('Draw').
 
 row_completed([]).
 row_completed([H|T]) :-
@@ -342,16 +357,12 @@ create_shuffle_board(Rows, Cols, Board) :-
 
 % display_game(+GameState)
 % Exibe o estado atual do jogo com base no GameState atualizado.
-display_game(game_state(Board1, Board2, CurrentPlayer, Symbol, _D1, _D2)) :-
+display_game(game_state(Board1, Board2, _CurrentPlayer, _Symbol, _D1, _D2)) :-
     write('Board Player1:'), nl,
     display_board(Board1), nl,
     
     write('Board Player2:'), nl,
-    display_board(Board2), nl,
-    
-    % Exibe o jogador atual
-    write('Your turn: '), write(CurrentPlayer), nl,
-    format('Place a ~w', Symbol), nl.
+    display_board(Board2), nl.
 
 
 % Exibe o tabuleiro
