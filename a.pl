@@ -90,7 +90,8 @@ choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
     ;   Difficulty = 2 -> % Bot Greedy
         write('Bot evaluating options...'),
         sleep(3),
-        greedy_move(game_state(B1, B2, P, S, D1, D2), Move)
+        greedy_move(game_state(B1, B2, P, S, D1, D2), Move),
+        sleep(5)
     ).
 
 %greedy bot 
@@ -147,58 +148,41 @@ greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move):-
         ),
         ScoreMoves1
     ),
-    board_score(B2, CurrentScore2),
-    board_score(B1, CurrentScore1),
-    (CurrentScore1 = 0 -> NewScore1 is 0.5; NewScore1 = CurrentScore1),
-    (CurrentScore2 = 0 -> NewScore2 is 0.5; NewScore2 = CurrentScore2),
-    Ratio is NewScore2/NewScore1,
+
+    board_score(B2, CurrentScore),
     max_member(Score1-Move1, ScoreMoves1),
-    findall(
-        Value-M,
-        (
-            member(M, ValidMoves),
-            move(game_state(B1, B2, player2, S, _D1, _D2), M, NextGameState),
-            value(NextGameState, player2, Value)
-        ),
-        ScoreMoves2
-    ),
-    min_member(MinScore-Move2, ScoreMoves2),
     (  
-        Score1 > Ratio -> Move = Move1  
+        Score1 > CurrentScore -> Move = Move1  
     ;   
-        
-
-            (   MinScore < Ratio -> Move = Move2  
-        ;
-            (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
-                GreedyMoves \= [] ->  
-                findall(  
-                    ValueOpponent-M,  
-                    (  
-                        member(M, GreedyMoves),  
-                        move(game_state(B1, B2, player2, S, _D1, _D2), M, NextGameState),  
-                        value(NextGameState, player2, ValueOpponent) 
-                    ),  
-                    Score1Moves2  
+        write('Greedy'),nl,
+        (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
+            GreedyMoves \= [] ->  
+            findall(  
+                ValueOpponent-M,  
+                (  
+                    member(M, GreedyMoves),  
+                    move(game_state(B1, B2, player2, S, _D1, _D2), M, NextGameState),  
+                    value(NextGameState, player2, ValueOpponent) 
                 ),  
-                min_member(_-Move, Score1Moves2) , 
-                % write('Current Score: '), write(CurrentScore),nl,write(' Score1: '), write(Score1),nl,
-                write('Move: '), write(Move),nl
+                Score1Moves2  
+            ),  
+            min_member(_-Move, Score1Moves2)  
+            % write('Current Score: '), write(CurrentScore),nl,write(' Score1: '), write(Score1),nl,
+            write('Move: '), write(Move),nl
 
-            ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
-                findall(  
-                    MinValue-M,  
-                    (  
-                        member(M, ValidMoves),  
-                        move(game_state(B1, B2, player2, S, _D1, _D2), M, NextGameState),  
-                        value(NextGameState, player2, MinValue)
-                    ),  
-                    ScoreMoves2  
+        ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
+            findall(  
+                MinValue-M,  
+                (  
+                    member(M, ValidMoves),  
+                    move(game_state(B1, B2, player2, S, _D1, _D2), M, NextGameState),  
+                    value(NextGameState, player2, MinValue)
                 ),  
-                min_member(_-Move, ScoreMoves2)  
-            )  
-        )
-    ). 
+                ScoreMoves2  
+            ),  
+            min_member(_-Move, ScoreMoves2)  
+        )  
+    ).  
 
 
 greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
@@ -216,70 +200,56 @@ greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
         ScoreMoves1
     ),
 
-    board_score(B1, CurrentScore1),
-    board_score(B2, CurrentScore2),
-    (CurrentScore1 = 0 -> NewScore1 is 0.5; NewScore1 = CurrentScore1),
-    (CurrentScore2 = 0 -> NewScore2 is 0.5; NewScore2 = CurrentScore2),
-    Ratio is NewScore1/NewScore2,
+    board_score(B1, CurrentScore),
     max_member(Score1-Move1, ScoreMoves1),
-    findall(
-        Value-M,
-        (
-            member(M, ValidMoves),
-            move(game_state(B1, B2, player1, S, _D1, _D2), M, NextGameState),
-            value(NextGameState, player1, Value)
-        ),
-        ScoreMoves2
-    ),
-    min_member(MinScore-Move2, ScoreMoves2),
+    write(Score1),nl,
     (  
-        Score1 > Ratio -> Move = Move1  
+        Score1 > CurrentScore -> Move = Move1  
     ;   
-        (
-            
-            MinScore < Ratio -> Move = Move2  
-        ;
-            (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
-                GreedyMoves \= [] ->  
-                findall(  
-                    ValueOpponent-M,  
-                    (  
-                        member(M, GreedyMoves),  
-                        move(game_state(B1, B2, player1, S, _D1, _D2), M, NextGameState),  
-                        value(NextGameState, player1, ValueOpponent)  
-                    ),  
-                    Score1Moves2  
+        (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
+            GreedyMoves \= [] ->  
+            findall(  
+                ValueOpponent-M,  
+                (  
+                    member(M, GreedyMoves),  
+                    move(game_state(B1, B2, player1, S, _D1, _D2), M, NextGameState),  
+                    value(NextGameState, player1, ValueOpponent)  
                 ),  
-                min_member(_-Move, Score1Moves2)  
-            ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
-                findall(  
-                    Value-M,  
-                    (  
-                        member(M, ValidMoves),  
-                        move(game_state(B1, B2, player1, S, _D1, _D2), M, NewGameState),  
-                        value(NewGameState, player1, Value)
-                    ),  
-                    ScoreMoves11  
+                Score1Moves2  
+            ),  
+            min_member(_-Move, Score1Moves2)  
+        ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
+            findall(  
+                Value-M,  
+                (  
+                    member(M, ValidMoves),  
+                    move(game_state(B1, B2, player1, S, _D1, _D2), M, NewGameState),  
+                    value(NewGameState, player1, Value)
                 ),  
-                min_member(_-Move, ScoreMoves11)  
-            ) 
-        ) 
+                ScoreMoves11  
+            ),  
+            min_member(_-Move, ScoreMoves11)  
+        )  
     ).  
 
 %o game state é tanto melhor quantos menos pontos tiver o player e mais o adversario, o estado do jogo é mais positivo quanto menor for o value
 value(game_state(B1, B2, P, S, _D1, _D2), player1, Value):-
     board_score(B1, ScoreB1),
     board_score(B2, ScoreB2),
-    (ScoreB1 = 0 -> NewScore1 is 0.5; NewScore1 = ScoreB1),
-    (ScoreB2 = 0 -> NewScore2 is 0.5; NewScore2 = ScoreB2),
-    Value is NewScore1/NewScore2.
+    (
+        ScoreB2 = 0 -> Value is ScoreB1 / 0.5
+        ;
+        Value is ScoreB1 / ScoreB2
+    ).
 
 value(game_state(B1, B2, P, S, _D1, _D2), player2, Value):-
     board_score(B1, ScoreB1),
     board_score(B2, ScoreB2),
-    (ScoreB1 = 0 -> NewScore1 is 0.5; NewScore1 = ScoreB1),
-    (ScoreB2 = 0 -> NewScore2 is 0.5; NewScore2 = ScoreB2),
-    Value is NewScore2/NewScore1.
+    (
+        ScoreB1 = 0 -> Value is ScoreB2 / 0.5
+        ;
+        Value is ScoreB2 / ScoreB1
+    ).
 
 % Predicado initial_state/4
 % Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
