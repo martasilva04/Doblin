@@ -6,8 +6,10 @@
 - Tomás Vinhas: up202208437
 
   **Distribution of work**
-- Marta Silva:
-- Tomás Vinhas:
+- Marta Silva: Focou-se em implementar as funções "choose_move(+GameState, +Level, -Move)", "value(+GameState, +Player, -Value)", "game_over(+GameState, -Winner)", "valid_moves(+GameState, -ListOfMoves)".
+- Tomás Vinhas: Focou-se na implemantação das restantes funções "display_game(+GameState)", "initial_state(+GameConfig, -GameState)", "game_over(+GameState, -Winner)", "move(+GameState, +Move, -NewGameState)".
+
+- Embora cada um de nós tenha focado em funções específicas, trabalhámos juntos de forma próxima, ajudando-nos mutuamente e trocando ideias para superar os desafios que surgiram. Este trabalho em equipa ajudou-nos a melhorar cada parte do trabalho e a torná-lo mais eficiente. A divisão das tarefas foi equilibrada, e o esforço conjunto resultou num trabalho final bem integrado e otimizado.
 
 ## Instalação e Execução
 Para instalar o jogo Doblin, comece fazendo o download e descompactando os arquivos do arquivo PFL_TP2_T05_Doblin_7.zip. Posteriormente, acesse o diretório src e abra o arquivo game.pl. Você pode fazer isso através da linha de comando ou utilizando a interface gráfica do Sicstus Prolog 4.7.1. O jogo está disponível tanto para Windows quanto para Linux. Para iniciar o jogo, execute o predicado play/0.
@@ -34,7 +36,7 @@ A implementação de tabuleiros de jogo com tamanho variável. Permiu aumentar a
 **Representação da configuração de jogo** : A configuração inicial do jogo Doblin contem o tamanho do tabuleiro, 6x6 ou 8x8, a dificuldade do jogador 1 e a dificuldade do jogador 2. Para tal, processou-se os respetivos inputs que indicavam o tamanho desejado do tabuleiro, bem como a dificuldade pretendida para cada um dos jogadores. De seguida colocaram-se estes três parâmetros na lista GameConfig que depois é usado pelo predicado initial_state/2 (initial_state(+GameConfig, -GameState)). Este predicado, através da configuração inicial de jogo, vai gerar dois tabuleiros vazios, com o tamanho desejado previamente. Este predicado vai devolver o GameState inicial, que irá conter os dois tabuleiros vazios, o primeiro jogador a começar a jogar (jogador 1), o símbolo correspondente a essa jogada (X) e a respetiva dificuldade dos jogadores. 
 
 **Representação do estado interno do jogo** : 
-O GameState é responsável por representar o estado atual do jogo, este contem o tabuleiro1, tabuleiro2, jogador, símbolo, dificuldade do jogador 1 e dificuldade do jogador 2. Ambos os tabuleiros são representados por uma lista de listas, de modo a representar uma matriz onde as jogadas podem ser colocadas. O jogador quem deve efetuar a próxima jogada e este é representado pelos átomos player1, player2. O símbolo indica a peça que o jogador a jogar deve colocar no tabuleiro, visto que em cada vez de jogada o jogador tem de colocar um X e um O, o símbolo é representado pelos átomos x e o. As respetivas dificuldades de cada jogador são representadas por 0 (jogador humano), 1 (computador na dificuldade random), 2 (computador na dificuldade gulosa). As seguintes imagens demonstram o GameState ao longo de uma partida:
+O GameState é responsável por representar o estado atual do jogo, este contém o tabuleiro1, tabuleiro2, jogador, símbolo, dificuldade do jogador 1 e dificuldade do jogador 2. Ambos os tabuleiros são representados por uma lista de listas, de modo a representar uma matriz onde as jogadas podem ser colocadas. O jogador quem deve efetuar a próxima jogada e este é representado pelos átomos player1, player2. O símbolo indica a peça que o jogador a jogar deve colocar no tabuleiro, visto que em cada vez de jogada o jogador tem de colocar um X e um O, o símbolo é representado pelos átomos x e o. As respetivas dificuldades de cada jogador são representadas por 0 (jogador humano), 1 (computador na dificuldade random), 2 (computador na dificuldade gulosa). As seguintes imagens demonstram o GameState ao longo de uma partida:
 
 - Inicial 
 
