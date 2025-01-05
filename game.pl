@@ -94,6 +94,7 @@ game_loop(GameState):-
 choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
     write('Your turn: '), write(P), nl,
     format('Place a ~w', S), nl,
+    write(game_state(B1, B2, P, S, D1, D2)),nl,
     (P = player1 -> Difficulty = D1; Difficulty = D2),
     (   Difficulty = 0 -> % Human player
         write(P), nl,
