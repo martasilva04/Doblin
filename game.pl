@@ -293,20 +293,20 @@ value(game_state(B1, B2, P, S, _D1, _D2), player2, Value) :-
     (ScoreB2 = 0 -> NewScore2 is 0.5; NewScore2 = ScoreB2),
     Value is NewScore2/NewScore1.
 
-
-% Predicado initial_state/4
-% Configura o estado inicial do jogo e gera dois tabuleiros
+% initial_state(+GameConfig, -GameState)
+% Recebe as configurações iniciais de jogo e retorna o game state inicial que vai conter os dois tabuleiros, vazios, criados pela função, e é inicializado como jogador inicial o player1 com o símbolo x.
 initial_state(GameConfig, game_state(Board1, Board2, player1, x, Difficulty1, Difficulty2)) :-
     member(board_size(Option), GameConfig),
     nth1(2, GameConfig, Difficulty1),
     nth1(3, GameConfig, Difficulty2),
     get_board_size(Option, Rows, Cols),
     
-    % Gera o tabuleiro inicial
+    % Gera o tabuleiro do player1
     create_shuffle_board(Rows, Cols, Board1),
     
-    % Gera o tabuleiro embaralhado
+    % Gera o tabuleiro do player2
     create_shuffle_board(Rows, Cols, Board2).
+
 
 
 board_score(Board, Score):-
@@ -334,7 +334,8 @@ game_over(game_state(T1, T2, _P, _S, _D1, _D2), Winner):-
     ;   
         Winner = draw
     ).
-
+% print_results(+ScoreB1, ScoreB2)
+% Função que imprime a pontuação dos dois jogadores
 print_results(ScoreB1, ScoreB2):-
     write('End of game! Calculating points...'), nl,
     write('Score Board1 (Player1): '), write(ScoreB1), nl,
