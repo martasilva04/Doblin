@@ -499,7 +499,7 @@ get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter) :-
         get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter)
     ;   (   member(LetterTemp, AlphaList)  
         ->  Letter = LetterTemp            
-        ;   write('Letra inválida! A letra deve ser válida.'), nl,
+        ;   write('Invalid letter! The letter must be valid.'), nl,
             get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter)
         )
     ).
@@ -664,7 +664,10 @@ remove_header(Board, NewBoard):-
     transpose(BoardAux,TransposeBoard),
     TransposeBoard=[_|NewBoard].
 
-
+% clear_console/0
+% Clears console
+clear_console:- 
+    write('\33\[2J').
 
 
 %testar
@@ -735,7 +738,3 @@ shuffle_board(Board, ShuffledBoard) :-
     % Adiciona o cabeçalho de volta
     ShuffledBoard = [Header | ShuffledRows].
 
-% clear_console/0
-% Clears console
-clear_console:- 
-    write('\33\[2J').
