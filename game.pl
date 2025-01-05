@@ -4,7 +4,7 @@
 
 % Main predicate of the game
 play :-
-    write('=== Welcome to the Game ==='), nl,
+    write('=== Welcome to Doblin ==='), nl,
     game_menu.
 
 % Displays the game menu and sets up options
