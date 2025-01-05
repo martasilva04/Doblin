@@ -2,21 +2,21 @@
 :- use_module(library(lists)).
 :- use_module(library(system)).
 
-% Predicado principal do jogo
+% Main predicate of the game
 play :-
-    write('=== Bem-vindo ao Jogo ==='), nl,
+    write('=== Welcome to the Game ==='), nl,
     game_menu.
 
-% Exibe o menu do jogo e configura as opções
+% Displays the game menu and sets up options
 game_menu :-
-    write('1. Jogar (H/H)'), nl,
-    write('2. Jogar (H/PC)'), nl,
-    write('3. Jogar (PC/H)'), nl,
-    write('4. Jogar (PC/PC)'), nl,
-    write('Escolha uma opcao: '),
+    write('1. Play (H/H)'), nl,
+    write('2. Play (H/PC)'), nl,
+    write('3. Play (PC/H)'), nl,
+    write('4. Play (PC/PC)'), nl,
+    write('Choose an option: '),
     get_valid_option(Type, [1,2,3,4]),
     handle_option(Type, Difficulty1, Difficulty2),
-    write('Escolha o tamanho do tabuleiro: '), nl,
+    write('Choose the board size: '), nl,
     write('1. 6x6'), nl,
     write('2. 8x8'), nl,
     get_valid_option(Size, [1,2]), 
@@ -29,23 +29,23 @@ handle_option(4, Difficulty1, Difficulty2) :- % PC/PC
     choose_difficulty(player1, Difficulty1),
     choose_difficulty(player2, Difficulty2).
 
-% Configura o jogo de acordo com os tipos dos jogadores
+% Sets up the game according to player types
 setup_game(Size, Difficulty1, Difficulty2) :- 
-    write('Configurando o jogo...'), nl,
+    write('Setting up the game...'), nl,
     GameConfig = [board_size(Size), Difficulty1, Difficulty2],
     initial_state(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
 get_valid_option(Number, Valid) :-
     get_char(Option),
-    get_char(Pending),            % Lê o próximo caractere no buffer
-    (   Pending \= '\n'           % Verifica se a entrada contém mais de um caractere
+    get_char(Pending),            % Reads the next character in the buffer
+    (   Pending \= '\n'           % Checks if the input contains more than one character
     ->  write('Invalid Option! Input must be a single character.'), nl,
-        clear_input_buffer,       % Limpa o buffer para evitar problemas
+        clear_input_buffer,       % Clears the buffer to avoid issues
         get_valid_option(Number, Valid)
     ;   char_code(Option, Code),
-        NumberTemp is Code - 48,  % Converte o caractere para número
-        (   member(NumberTemp, Valid)  % Verifica se a opção é válida
+        NumberTemp is Code - 48,  % Converts the character to a number
+        (   member(NumberTemp, Valid)  % Checks if the option is valid
         ->  Number = NumberTemp
         ;   length(Valid, Size),
             format('Invalid Option! Choose Number (1-~w): ', Size), nl,
@@ -53,7 +53,7 @@ get_valid_option(Number, Valid) :-
         )
     ).
 
-% Limpa o restante do buffer de entrada
+% Clears the remaining input buffer
 clear_input_buffer :-
     get_char(Char),
     (Char = '\n' -> true ; clear_input_buffer).
@@ -71,29 +71,29 @@ game_loop(GameState):-
     game_over(GameState, Winner),
     print_winner(Winner), !.
 game_loop(GameState):-
-    choose_move(GameState, Coordenadas),
-    move(GameState, Coordenadas, NewGameState),
+    choose_move(GameState, Coordinates),
+    move(GameState, Coordinates, NewGameState),
     game_loop(NewGameState).
 
 choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
     write('Your turn: '), write(P), nl,
     format('Place a ~w', S), nl,
     (P = player1 -> Difficulty = D1; Difficulty = D2),
-    (   Difficulty = 0 -> % Jogador humano
+    (   Difficulty = 0 -> % Human player
         write(P), nl,
         read_input(Move, game_state(B1, B2, P, S, D1, D2))
-    ;   Difficulty = 1 -> % Bot aleatório
+    ;   Difficulty = 1 -> % Random bot
         write('Bot evaluating options...'),
         sleep(3),
         valid_moves(B1, ValidMoves),
         random_member(Move, ValidMoves)
-    ;   Difficulty = 2 -> % Bot Greedy
+    ;   Difficulty = 2 -> % Greedy bot
         write('Bot evaluating options...'),
         sleep(3),
         greedy_move(game_state(B1, B2, P, S, D1, D2), Move)
     ).
 
-%greedy bot 
+% greedy bot
 
 adjacent_or_diagonal(game_state(B1, B2, player2, S, _D1, _D2), Move) :-
     move(game_state(B1, B2, player2, S, _D1, _D2), Move, game_state(NewB1, NewB2, NextPlayer, NextSymbol, _D1, _D2)), % Simulate the move.
@@ -103,7 +103,6 @@ adjacent_or_diagonal(game_state(B1, B2, player1, S, _D1, _D2), Move) :-
     move(game_state(B1, B2, player1, S, _D1, _D2), Move, game_state(NewB1, NewB2, NextPlayer, NextSymbol, _D1, _D2)), % Simulate the move.
     adjacent_or_diagonal_check(NewB1, Move, S).
 
-
 % Check if the move places a symbol adjacent or diagonally near an existing symbol.
 adjacent_or_diagonal_check(Board, Move, S) :-
     % Extract the coordinates of the move.
@@ -111,33 +110,26 @@ adjacent_or_diagonal_check(Board, Move, S) :-
     % Check for adjacency or diagonal proximity.
     (
         adjacent(X, Y, X1, Y1),
-        %write('X: '),write(X1),nl,write('Y: '),write(Y1),nl,
-
         symbol_at(Board, X1, Y1, S)
     ).
 
-
 % Define adjacency and diagonal positions.
 adjacent(X, Y, X1, Y1) :-
-    member(DX, [-1, 0, 1]), % Diferença para X.
-    member(DY, [-1, 0, 1]), % Diferença para Y.
-    (DX \= 0; DY \= 0),     % Exclui (0, 0), ou seja, a mesma posição.
-    X1 is X + DX,           % Calcula X1.
+    member(DX, [-1, 0, 1]), % Difference for X.
+    member(DY, [-1, 0, 1]), % Difference for Y.
+    (DX \= 0; DY \= 0),     % Exclude (0, 0), i.e., the same position.
+    X1 is X + DX,           % Calculate X1.
     Y1 is Y + DY.
 
 symbol_at(Board, X, Y, Symbol) :-
     nth0(X, Board, Row), 
-    %write(Row),nl,     % Get the Y-th row (1-based indexing).
     nth0(Y, Row, Symbol).
-    %,write(S), nl,
-    %S=Symbol.
 
-
-greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move):-
+greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move) :-
     valid_moves(B2, ValidMoves),
     exclude(adjacent_or_diagonal(game_state(B1, B2, player2, S, _D1, _D2)), ValidMoves, GreedyMoves),
     get_next_symbol(S, NewSymbol),
-    %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
+    % If there are 3 of the same symbol, place the other symbol to block.
     findall(
         Value-M,
         (
@@ -166,11 +158,10 @@ greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move):-
     (  
         Score1 > Ratio -> Move = Move1  
     ;   
-        
-
-            (   MinScore < Ratio -> Move = Move2  
+        (   
+            MinScore < Ratio -> Move = Move2  
         ;
-            (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
+            (   % Otherwise, choose the move from GreedyMoves that gives the most points to the opponent
                 GreedyMoves \= [] ->  
                 findall(  
                     ValueOpponent-M,  
@@ -182,10 +173,8 @@ greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move):-
                     Score1Moves2  
                 ),  
                 min_member(_-Move, Score1Moves2) , 
-                % write('Current Score: '), write(CurrentScore),nl,write(' Score1: '), write(Score1),nl,
-                write('Move: '), write(Move),nl
-
-            ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
+                write('Move: '), write(Move), nl
+            ;   % Otherwise, use logic to minimize the opponent's points.  
                 findall(  
                     MinValue-M,  
                     (  
@@ -200,12 +189,11 @@ greedy_move(game_state(B1, B2, player2, S, _D1, _D2), Move):-
         )
     ). 
 
-
-greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
+greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move) :-
     valid_moves(B1, ValidMoves),
     exclude(adjacent_or_diagonal(game_state(B1, B2, player1, S, _D1, _D2)), ValidMoves, GreedyMoves),
     get_next_symbol(S, NewSymbol),
-    %se tiver 3 de um simbolo mete o outro simbolo para 'tapar'
+    % If there are 3 of the same symbol, place the other symbol to block.
     findall(
         Value-M,
         (
@@ -236,10 +224,9 @@ greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
         Score1 > Ratio -> Move = Move1  
     ;   
         (
-            
             MinScore < Ratio -> Move = Move2  
         ;
-            (   % Caso contrário, escolhe de GreedyMoves o que da mais pontos ao adversário
+            (   % Otherwise, choose the move from GreedyMoves that gives the most points to the opponent
                 GreedyMoves \= [] ->  
                 findall(  
                     ValueOpponent-M,  
@@ -251,7 +238,7 @@ greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
                     Score1Moves2  
                 ),  
                 min_member(_-Move, Score1Moves2)  
-            ;   % Caso contrário, utiliza a lógica para menos pontos possiveis.  
+            ;   % Otherwise, use logic to minimize the opponent's points.  
                 findall(  
                     Value-M,  
                     (  
@@ -266,20 +253,21 @@ greedy_move(game_state(B1, B2, player1, S, _D1, _D2), Move):-
         ) 
     ).  
 
-%o game state é tanto melhor quantos menos pontos tiver o player e mais o adversario, o estado do jogo é mais positivo quanto menor for o value
-value(game_state(B1, B2, P, S, _D1, _D2), player1, Value):-
+% The game state is better the fewer points the player has and the more the opponent has, the game state is more positive the lower the value.
+value(game_state(B1, B2, P, S, _D1, _D2), player1, Value) :-
     board_score(B1, ScoreB1),
     board_score(B2, ScoreB2),
     (ScoreB1 = 0 -> NewScore1 is 0.5; NewScore1 = ScoreB1),
     (ScoreB2 = 0 -> NewScore2 is 0.5; NewScore2 = ScoreB2),
     Value is NewScore1/NewScore2.
 
-value(game_state(B1, B2, P, S, _D1, _D2), player2, Value):-
+value(game_state(B1, B2, P, S, _D1, _D2), player2, Value) :-
     board_score(B1, ScoreB1),
     board_score(B2, ScoreB2),
     (ScoreB1 = 0 -> NewScore1 is 0.5; NewScore1 = ScoreB1),
     (ScoreB2 = 0 -> NewScore2 is 0.5; NewScore2 = ScoreB2),
     Value is NewScore2/NewScore1.
+
 
 % Predicado initial_state/4
 % Configura o estado inicial do jogo e gera dois tabuleiros (normal e embaralhado)
@@ -297,18 +285,18 @@ initial_state(GameConfig, game_state(Board1, Board2, player1, x, Difficulty1, Di
 
 
 board_score(Board, Score):-
-    calcular_pontos(Board, x, ScoreX),
-    calcular_pontos(Board, o, ScoreO),
+    calculate_points(Board, x, ScoreX),
+    calculate_points(Board, o, ScoreO),
     Score is ScoreX+ScoreO.
 
 game_over(game_state(T1, T2, _P, _S, _D1, _D2), Winner):-
     board_completed(T1),
-    calcular_pontos(T1, x, ScoreX1),
-    calcular_pontos(T1, o, ScoreO1),
+    calculate_points(T1, x, ScoreX1),
+    calculate_points(T1, o, ScoreO1),
     ScoreB1 is ScoreX1+ScoreO1,
 
-    calcular_pontos(T2, x, ScoreX2),
-    calcular_pontos(T2, o, ScoreO2),
+    calculate_points(T2, x, ScoreX2),
+    calculate_points(T2, o, ScoreO2),
     ScoreB2 is ScoreX2+ScoreO2,
     print_results(ScoreB1, ScoreB2),
 
@@ -360,9 +348,9 @@ get_board_size(2, 8, 8). % Opção 2 -> Tabuleiro 8x8
 
 % Cria linhas com letras na borda esquerda e células vazias.
 create_lettered_rows([], _, []). % Caso base: sem letras, sem linhas.
-create_lettered_rows([Letra | RestoLetras], Cols, [[Letra | LinhaVazia] | RestoLinhas]) :-
-    create_empty_row(Cols, LinhaVazia), % Cria uma linha vazia para cada letra.
-    create_lettered_rows(RestoLetras, Cols, RestoLinhas).
+create_lettered_rows([Letter | RestLetters], Cols, [[Letter | EmptyLine] | RestLines]) :-
+    create_empty_row(Cols, EmptyLine), % Cria uma linha vazia para cada letra.
+    create_lettered_rows(RestLetters, Cols, RestLines).
 
 % Cria uma linha vazia
 create_empty_row(0, []) :- !.
@@ -374,18 +362,18 @@ create_empty_row(Cols, [' '|Rest]) :-
 % Gera o tabuleiro embaralhado de acordo com o tamanho (6x6 ou 8x8)
 create_shuffle_board(Rows, Cols, Board) :-
     % Cria listas de números e letras conforme o tamanho do tabuleiro
-    num_list(1, Cols, Colunas),
-    alphabet_list(Rows, Letras),
+    num_list(1, Cols, Columns),
+    alphabet_list(Rows, Letters),
     
     % Embaralha as colunas e as letras
-    random_permutation(Colunas, ColunasEmbaralhadas),
-    random_permutation(Letras, LetrasEmbaralhadas),
+    random_permutation(Columns, ShuffleColumns),
+    random_permutation(Letters, ShuffleLetters),
     
     % Gera a linha do cabeçalho (números embaralhados)
-    Board = [[' ' | ColunasEmbaralhadas] | LinhasEmbaralhadas],
+    Board = [[' ' | ShuffleColumns] | ShuffleLines],
     
     % Gera as linhas restantes com as letras embaralhadas
-    create_lettered_rows(LetrasEmbaralhadas, Cols, LinhasEmbaralhadas).
+    create_lettered_rows(ShuffleLetters, Cols, ShuffleLines).
 
 
 
@@ -409,48 +397,43 @@ display_board([Row|Rows]) :-
 
 % move(+GameState, +Move, -NewGameState)
 % Atualiza o estado do jogo com base no movimento do jogador.
-move(game_state(BoardInicial, BoardEmbaralhado, CurrentPlayer, Symbol, _D1, _D2), Move, game_state(NewBoardInicial, NewBoardEmbaralhado, NextPlayer,NewSymbol, _D1, _D2)) :-
-    coordenadas_para_indices_segundo(Move, BoardInicial, LinhaIndex1, ColunaIndex1),
-    atualizar_tabuleiro(BoardInicial, LinhaIndex1, ColunaIndex1, Symbol, NewBoardInicial),
-    coordenadas_para_indices_segundo(Move, BoardEmbaralhado, LinhaIndex2, ColunaIndex2),
-    atualizar_tabuleiro(BoardEmbaralhado, LinhaIndex2, ColunaIndex2, Symbol, NewBoardEmbaralhado),
+move(game_state(Board1, Board2, CurrentPlayer, Symbol, _D1, _D2), Move, game_state(NewBoard1, NewBoard2, NextPlayer, NewSymbol, _D1, _D2)) :-
+    coordenadas_para_indices_segundo(Move, Board1, LineIndex1, ColumnIndex1),
+    update_board(Board1, LineIndex1, ColumnIndex1, Symbol, NewBoard1),
+    coordenadas_para_indices_segundo(Move, Board2, LineIndex2, ColumnIndex2),
+    update_board(Board2, LineIndex2, ColumnIndex2, Symbol, NewBoard2),
     get_next_symbol(Symbol,NewSymbol),
     next_player(CurrentPlayer, Symbol, NextPlayer).
 
-% coordenadas_para_indices(+Coordenadas, -Linha, -Coluna)
-% Converte as coordenadas fornecidas pelo jogador em índices para o primeiro tabuleiro
-coordenadas_para_indices([Letra, Numero], LinhaIndex, ColunaIndex) :-
-    char_code(Letra, LetraCode),
-    LinhaIndex is LetraCode - 65+1,  % A=65 na tabela ASCII, portanto subtraímos 65
-    ColunaIndex is Numero.    % O número já está no formato 1-6, mas precisamos de 0-5
 
 % Função para extrair as letras das linhas
-extrair_letras(Tabuleiro, Letras) :-
-    maplist(nth1(1), Tabuleiro, Letras).  % Pega a primeira letra de cada linha
+extract_letters(Board, Letters) :-
+    maplist(nth1(1), Board, Letters).  % Pega a primeira letra de cada linha
 
 % Função para gerar os números das colunas
-gerar_colunas([H|Tabuleiro], H).
+generate_columns([H|Board], H).
 
 % coordenadas_para_indices_segundo(+Coordenadas, +BoardEmbaralhado, -Linha, -Coluna)
 % Converte as coordenadas (ex.: "A1") para os índices correspondentes no tabuleiro embaralhado.
 coordenadas_para_indices_segundo([Letra, Numero], BoardEmbaralhado, Linha, Coluna) :-
-    extrair_letras(BoardEmbaralhado, LetrasEmbaralhadas),
-    gerar_colunas(BoardEmbaralhado, ColunasEmbaralhadas),
+    extract_letters(BoardEmbaralhado, LetrasEmbaralhadas),
+    generate_columns(BoardEmbaralhado, ColunasEmbaralhadas),
     nth0(Linha, LetrasEmbaralhadas, Letra),  % Encontra o índice da letra embaralhada
     nth0(Coluna, ColunasEmbaralhadas, Numero).
 
-celula_vazia(Tabuleiro, LinhaIndex, ColunaIndex) :-
-    nth0(LinhaIndex, Tabuleiro, LinhaAtual),
-    nth0(ColunaIndex, LinhaAtual, Valor),
-    Valor = ' '.  % A célula está vazia se contém um espaço em branco
+empty_cell(Board, RowIndex, ColumnIndex) :-
+    nth0(RowIndex, Board, CurrentRow),
+    nth0(ColumnIndex, CurrentRow, Value),
+    Value = ' '.  % The cell is empty if it contains a blank space
+
 
 % atualizar_tabuleiro(+Board, +Linha, +Coluna, +Simbolo, -NewBoard)
 % Atualiza uma célula específica em um tabuleiro.
-atualizar_tabuleiro(Board, Linha, Coluna, Simbolo, NewBoard) :-
-    nth0(Linha, Board, LinhaBoard, OutBoard),
-    nth0(Coluna, LinhaBoard, _, LinhaOut),
-    nth0(Coluna, LinhaUpdated, Simbolo, LinhaOut),
-    nth0(Linha, NewBoard, LinhaUpdated, OutBoard).
+update_board(Board, Row, Column, Symbol, NewBoard) :-
+    nth0(Row, Board, RowBoard, OutBoard),
+    nth0(Column, RowBoard, _, RowOut),
+    nth0(Column, UpdatedRow, Symbol, RowOut),
+    nth0(Row, NewBoard, UpdatedRow, OutBoard).
 
 
 % simbolo_jogador(+Player, -Simbolo)
@@ -498,7 +481,7 @@ read_input([Letra, Numero], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
     format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
     get_valid_option(Numero, NumList),
     coordenadas_para_indices_segundo([Letra, Numero], B1, LinhaIndex, ColunaIndex),
-    (   celula_vazia(B1, LinhaIndex, ColunaIndex) 
+    (   empty_cell(B1, LinhaIndex, ColunaIndex) 
     ->  ! 
     ;   write('Invalid! This cell is ocupied.'), nl,
         fail  
@@ -522,18 +505,6 @@ get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra) :-
     ).
 
 
-get_valid_number(NumList, FirstNumber, LastNumber, Numero) :-
-    format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
-    get_char(NumChar),            
-    get_char(_),                  
-    char_code(NumChar, NumCode),
-    NumeroTemp is NumCode - 48,       
-    (   member(NumeroTemp, NumList)  
-    ->  Numero = NumeroTemp                    
-    ;   write('Número inválido! O número deve ser válido.'), nl,
-        get_valid_number(NumList, FirstNumber, LastNumber, Numero) 
-    ).
-
 % Gera uma lista de números de 1 até N
 num_list(M, M, [M]).  % Caso base: quando M é igual a N
 num_list(M, N, [M|Rest]) :-
@@ -545,96 +516,95 @@ num_list(M, N, [M|Rest]) :-
 % calcular pontos 
 
 % Calcula os pontos de um tabuleiro
-calcular_pontos(Tabuleiro, Simbolo, Pontos) :-
-    remove_header(Tabuleiro, NewBoard),
-    % Calcula pontos de linhas horizontais
-    findall(1, linha_completa(NewBoard, Simbolo), LinhasPontos),
-    % Calcula pontos de colunas verticais
-    findall(1, coluna_completa(NewBoard, Simbolo), ColunasPontos),
-    % Calcula pontos de quadrados 2x2
-    findall(1, quadrado_completo(NewBoard, Simbolo), QuadradosPontos),
-    % Calcula pontos de diagonais
-    findall(1, diagonal_completa(NewBoard, Simbolo), DiagonaisPontos),
-    % Soma todos os pontos
-    length(LinhasPontos, PontosLinhas),
-    length(ColunasPontos, PontosColunas),
-    length(QuadradosPontos, PontosQuadrados),
-    length(DiagonaisPontos, PontosDiagonais),
-    Pontos is PontosLinhas + PontosColunas + PontosQuadrados + PontosDiagonais.
+calculate_points(Board, Symbol, Points) :-
+    remove_header(Board, NewBoard),
+    % Calculate points for horizontal lines
+    findall(1, complete_row(NewBoard, Symbol), RowPoints),
+    % Calculate points for vertical columns
+    findall(1, complete_column(NewBoard, Symbol), ColumnPoints),
+    % Calculate points for 2x2 squares
+    findall(1, complete_square(NewBoard, Symbol), SquarePoints),
+    % Calculate points for diagonals
+    findall(1, complete_diagonal(NewBoard, Symbol), DiagonalPoints),
+    % Sum all points
+    length(RowPoints, RowScore),
+    length(ColumnPoints, ColumnScore),
+    length(SquarePoints, SquareScore),
+    length(DiagonalPoints, DiagonalScore),
+    Points is RowScore + ColumnScore + SquareScore + DiagonalScore.
 
-% Verifica se uma linha está completa
-linha_completa(Tabuleiro, Simbolo) :-
-    member(Linha, Tabuleiro),
-    sublist([Simbolo, Simbolo, Simbolo, Simbolo], Linha).
-    
+% Check if a row is complete
+complete_row(Board, Symbol) :-
+    member(Row, Board),
+    sublist([Symbol, Symbol, Symbol, Symbol], Row).
 
-% Verifica se uma coluna está completa
-coluna_completa(Tabuleiro, Simbolo) :-
-    transpose(Tabuleiro, TabuleiroTransposto),
-    linha_completa(TabuleiroTransposto, Simbolo).
+% Check if a column is complete
+complete_column(Board, Symbol) :-
+    transpose(Board, TransposedBoard),
+    complete_row(TransposedBoard, Symbol).
 
-% Verifica se um quadrado 2x2 está completo
-quadrado_completo(Tabuleiro, Simbolo) :-
-    length(Tabuleiro,Size),
-    between(1, Size, Linha), 
-    between(1, Size, Coluna), 
-    nth1(Linha, Tabuleiro, Linha1),
-    nth1(Coluna, Linha1, Simbolo),
-    Linha2Index is Linha + 1,
-    nth1(Linha2Index, Tabuleiro, Linha2),
-    Coluna2Index is Coluna + 1,
-    nth1(Coluna, Linha2, Simbolo),
-    nth1(Coluna2Index, Linha1, Simbolo),
-    nth1(Coluna2Index, Linha2, Simbolo).
+% Check if a 2x2 square is complete
+complete_square(Board, Symbol) :-
+    length(Board, Size),
+    between(1, Size, Row), 
+    between(1, Size, Column), 
+    nth1(Row, Board, Row1),
+    nth1(Column, Row1, Symbol),
+    Row2Index is Row + 1,
+    nth1(Row2Index, Board, Row2),
+    Column2Index is Column + 1,
+    nth1(Column, Row2, Symbol),
+    nth1(Column2Index, Row1, Symbol),
+    nth1(Column2Index, Row2, Symbol).
 
-% Verifica se uma diagonal de 4 símbolos está completa
-diagonal_completa(Tabuleiro, Simbolo) :-
-    % Diagonais normais (de cima para baixo, da esquerda para a direita)
-    diagonal_normal(Tabuleiro, Simbolo);
-    % Diagonais invertidas (de cima para baixo, da direita para a esquerda)
-    diagonal_invertida(Tabuleiro, Simbolo).
+% Check if a diagonal of 4 symbols is complete
+complete_diagonal(Board, Symbol) :-
+    % Normal diagonals (top-left to bottom-right)
+    normal_diagonal(Board, Symbol);
+    % Inverted diagonals (top-right to bottom-left)
+    inverted_diagonal(Board, Symbol).
 
-% Verifica se uma diagonal normal (esquerda para direita) está completa
-diagonal_normal(Tabuleiro, Simbolo) :-
-    length(Tabuleiro, Size), 
+% Check if a normal diagonal (left to right) is complete
+normal_diagonal(Board, Symbol) :-
+    length(Board, Size), 
     Max is Size - 3, 
-    between(1, Max, Linha), 
-    between(1, Max, Coluna), 
-    nth1(Linha, Tabuleiro, Linha1),
-    nth1(Coluna, Linha1, Simbolo),
-    Linha2 is Linha + 1,
-    Coluna2 is Coluna + 1,
-    nth1(Linha2, Tabuleiro, Linha2_),
-    nth1(Coluna2, Linha2_, Simbolo),
-    Linha3 is Linha + 2,
-    Coluna3 is Coluna + 2,
-    nth1(Linha3, Tabuleiro, Linha3_),
-    nth1(Coluna3, Linha3_, Simbolo),
-    Linha4 is Linha + 3,
-    Coluna4 is Coluna + 3,
-    nth1(Linha4, Tabuleiro, Linha4_),
-    nth1(Coluna4, Linha4_, Simbolo).
+    between(1, Max, Row), 
+    between(1, Max, Column), 
+    nth1(Row, Board, Row1),
+    nth1(Column, Row1, Symbol),
+    Row2 is Row + 1,
+    Column2 is Column + 1,
+    nth1(Row2, Board, Row2_),
+    nth1(Column2, Row2_, Symbol),
+    Row3 is Row + 2,
+    Column3 is Column + 2,
+    nth1(Row3, Board, Row3_),
+    nth1(Column3, Row3_, Symbol),
+    Row4 is Row + 3,
+    Column4 is Column + 3,
+    nth1(Row4, Board, Row4_),
+    nth1(Column4, Row4_, Symbol).
 
-% Verifica se uma diagonal invertida (direita para esquerda) está completa
-diagonal_invertida(Tabuleiro, Simbolo) :-
-    length(Tabuleiro, Size), 
+% Check if an inverted diagonal (right to left) is complete
+inverted_diagonal(Board, Symbol) :-
+    length(Board, Size), 
     Max is Size - 3,
-    between(1, Max, Linha), % As diagonais invertidas começam de 1 a 3
-    between(4, Size, Coluna), % As diagonais invertidas começam de 4 a 6
-    nth1(Linha, Tabuleiro, Linha1),
-    nth1(Coluna, Linha1, Simbolo),
-    Linha2 is Linha + 1,
-    Coluna2 is Coluna - 1,
-    nth1(Linha2, Tabuleiro, Linha2_),
-    nth1(Coluna2, Linha2_, Simbolo),
-    Linha3 is Linha + 2,
-    Coluna3 is Coluna - 2,
-    nth1(Linha3, Tabuleiro, Linha3_),
-    nth1(Coluna3, Linha3_, Simbolo),
-    Linha4 is Linha + 3,
-    Coluna4 is Coluna - 3,
-    nth1(Linha4, Tabuleiro, Linha4_),
-    nth1(Coluna4, Linha4_, Simbolo).
+    between(1, Max, Row), % Inverted diagonals start from 1 to 3
+    between(4, Size, Column), % Inverted diagonals start from 4 to 6
+    nth1(Row, Board, Row1),
+    nth1(Column, Row1, Symbol),
+    Row2 is Row + 1,
+    Column2 is Column - 1,
+    nth1(Row2, Board, Row2_),
+    nth1(Column2, Row2_, Symbol),
+    Row3 is Row + 2,
+    Column3 is Column - 2,
+    nth1(Row3, Board, Row3_),
+    nth1(Column3, Row3_, Symbol),
+    Row4 is Row + 3,
+    Column4 is Column - 3,
+    nth1(Row4, Board, Row4_),
+    nth1(Column4, Row4_, Symbol).
 
 % Transpõe uma matriz (tabuleiro)
 transpose([], []).
