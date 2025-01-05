@@ -467,7 +467,7 @@ within_bounds(Board, Row, Col) :-
     Col > 0, Col =< NumCols.         % Verifica se a coluna está dentro dos limites
 
 
-read_input([Letra, Numero], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
+read_input([Letter, Number], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
     length(B1, Size),
     Size1 is Size - 1,
     alphabet_list(Size1, AlphaList),
@@ -477,10 +477,10 @@ read_input([Letra, Numero], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
     NumList = [FirstNumber|_],
     last(_, LastNumber, NumList),
     repeat, 
-    get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra),
+    get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter),
     format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
-    get_valid_option(Numero, NumList),
-    coordenadas_para_indices_segundo([Letra, Numero], B1, LinhaIndex, ColunaIndex),
+    get_valid_option(Number, NumList),
+    coordenadas_para_indices_segundo([Letter, Number], B1, LinhaIndex, ColunaIndex),
     (   empty_cell(B1, LinhaIndex, ColunaIndex) 
     ->  ! 
     ;   write('Invalid! This cell is ocupied.'), nl,
@@ -489,18 +489,18 @@ read_input([Letra, Numero], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
 
     
 
-get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra) :-
+get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter) :-
     format('Choose letter (~w-~w): ', [FirstLetter, LastLetter]),
     get_char(LetraTemp),           
     get_char(Pending),              
     (   Pending \= '\n'            
     ->  write('Invalid input! Input must be a single letter.'), nl,
         clear_input_buffer,        
-        get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra)
+        get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter)
     ;   (   member(LetraTemp, AlphaList)  
-        ->  Letra = LetraTemp            
+        ->  Letter = LetraTemp            
         ;   write('Letra inválida! A letra deve ser válida.'), nl,
-            get_valid_letter(AlphaList, FirstLetter, LastLetter, Letra)
+            get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter)
         )
     ).
 
