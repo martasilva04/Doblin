@@ -480,8 +480,8 @@ read_input([Letter, Number], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
     get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter),
     format('Choose number (~w-~w): ', [FirstNumber, LastNumber]),
     get_valid_option(Number, NumList),
-    coordenadas_para_indices_segundo([Letter, Number], B1, LinhaIndex, ColunaIndex),
-    (   empty_cell(B1, LinhaIndex, ColunaIndex) 
+    coordenadas_para_indices_segundo([Letter, Number], B1, LineIndex, ColumnIndex),
+    (   empty_cell(B1, LineIndex, ColumnIndex) 
     ->  ! 
     ;   write('Invalid! This cell is ocupied.'), nl,
         fail  
@@ -491,14 +491,14 @@ read_input([Letter, Number], game_state(B1, _B2, _P, _S, _D1, _D2)) :-
 
 get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter) :-
     format('Choose letter (~w-~w): ', [FirstLetter, LastLetter]),
-    get_char(LetraTemp),           
+    get_char(LetterTemp),           
     get_char(Pending),              
     (   Pending \= '\n'            
     ->  write('Invalid input! Input must be a single letter.'), nl,
         clear_input_buffer,        
         get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter)
-    ;   (   member(LetraTemp, AlphaList)  
-        ->  Letter = LetraTemp            
+    ;   (   member(LetterTemp, AlphaList)  
+        ->  Letter = LetterTemp            
         ;   write('Letra inválida! A letra deve ser válida.'), nl,
             get_valid_letter(AlphaList, FirstLetter, LastLetter, Letter)
         )
@@ -644,12 +644,12 @@ valid_moves(Board, ListOfMoves) :-
     nth0(0, Board, HeaderRow), % Primeira linha contém os números das colunas
     exclude(=([]), HeaderRow, Numbers), % Remove elementos vazios da linha de cabeçalho
     tail(Board, Rows), % Remove a linha de cabeçalho do resto do tabuleiro
-    findall([Letra, Numero],
+    findall([Letter, Number],
         (   nth0(RowIndex, Rows, Row),   % Iterar sobre as linhas do tabuleiro
             nth0(ColIndex, Row, Cell),  % Iterar sobre as colunas
             Cell = ' ',                 % Verificar se a célula está vazia
-            nth0(RowIndex, Rows, [Letra|_]), % Obter a letra da linha atual
-            nth0(ColIndex, HeaderRow, Numero) % Obter o número da coluna
+            nth0(RowIndex, Rows, [Letter|_]), % Obter a letra da linha atual
+            nth0(ColIndex, HeaderRow, Number) % Obter o número da coluna
         ),
         ListOfMoves).
 
@@ -703,17 +703,17 @@ initial_state_preenchido(GameConfig, game_state(BoardInicial, BoardEmbaralhado, 
     shuffle_board(TempBoard, BoardEmbaralhado).
 
 % Cria um tabuleiro preenchido alternadamente com 'x' e 'o'.
-create_filled_board(Rows, Cols, Tabuleiro) :-
+create_filled_board(Rows, Cols, Board) :-
     num_list(1, Rows, RowNumbers),
     alphabet_list(Rows, Letras),
-    Tabuleiro = [[' ' | RowNumbers] | Linhas],
-    create_filled_rows(Letras, Cols, Linhas).
+    Board = [[' ' | RowNumbers] | Lines],
+    create_filled_rows(Letras, Cols, Lines).
 
 % Cria as linhas preenchidas com símbolos alternados.
 create_filled_rows([], _, []).
-create_filled_rows([Letra | RestLetras], Cols, [[Letra | Row] | RestRows]) :-
+create_filled_rows([Letter | RestLetters], Cols, [[Letter | Row] | RestRows]) :-
     fill_row(Cols, Row, x),  % Começa preenchendo com 'x'.
-    create_filled_rows(RestLetras, Cols, RestRows).
+    create_filled_rows(RestLetters, Cols, RestRows).
 
 % Preenche uma linha alternando os símbolos.
 fill_row(0, [], _).
