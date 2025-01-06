@@ -39,7 +39,7 @@ handle_option(4, Difficulty1, Difficulty2) :- % PC/PC
 setup_game(Size, Difficulty1, Difficulty2) :- 
     write('Setting up the game...'), nl,
     GameConfig = [board_size(Size), Difficulty1, Difficulty2],
-    initial_state(GameConfig, InitialGameState),
+    final_state(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
 % get_valid_option(+Number, +Valid)
@@ -327,6 +327,32 @@ initial_state(GameConfig, game_state(Board1, Board2, player1, x, Difficulty1, Di
     
     % Gera o tabuleiro do player2
     create_shuffle_board(Rows, Cols, Board2).
+
+final_state(GameConfig, game_state(Board1, Board2, player1, x, Difficulty1, Difficulty2)):-
+    member(board_size(Option), GameConfig),
+    nth1(2, GameConfig, Difficulty1),
+    nth1(3, GameConfig, Difficulty2),
+    get_board_size(Option, Rows, Cols),
+
+    Board1 = [
+    [' ', 3, 5, 4, 1, 6],
+    [B, x, x, x, o, o],
+    [C, x, o, x, o, o],
+    [A, o, x, o, o, x],
+    [F, x, o, x, x, o],
+    [E, x, o, x, o, o],
+    [D, x, x, x, o, x]
+    ],
+
+    Board2 = [
+    [' ', 3, 2, 6, 3, 4],
+    [C, x, x, x, o, o],
+    [A, x, o, x, o, o],
+    [B, o, x, o, o, x],
+    [F, x, o, x, x, o],
+    [D, x, o, x, o, o],
+    [E, x, x, x, o, x]
+    ].
 
 
 % board_score(+Board, -Score)
