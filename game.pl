@@ -39,7 +39,7 @@ handle_option(4, Difficulty1, Difficulty2) :- % PC/PC
 setup_game(Size, Difficulty1, Difficulty2) :- 
     write('Setting up the game...'), nl,
     GameConfig = [board_size(Size), Difficulty1, Difficulty2],
-    final_state(GameConfig, InitialGameState),
+    initial_state(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
 % get_valid_option(+Number, +Valid)
@@ -105,7 +105,6 @@ game_loop(GameState):-
 choose_move(game_state(B1, B2, P, S, D1, D2), Move):-
     write('Your turn: '), write(P), nl,
     format('Place a ~w', S), nl,
-    write(game_state(B1, B2, P, S, D1, D2)),nl,
     (P = player1 -> Difficulty = D1; Difficulty = D2),
     (   Difficulty = 0 -> % Human player
         write(P), nl,
@@ -327,8 +326,6 @@ initial_state(GameConfig, game_state(Board1, Board2, player1, x, Difficulty1, Di
     
     % Gera o tabuleiro do player2
     create_shuffle_board(Rows, Cols, Board2).
-
-
 
 
 % board_score(+Board, -Score)
@@ -594,7 +591,7 @@ complete_row(Board, Symbol) :-
 % complete_column(+Board, +Symbol)
 % Verifica colunas com 4 símbolos
 complete_column(Board, Symbol) :-
-    transpose(Board, TransposedBoard),
+    my_transpose(Board, TransposedBoard),
     complete_row(TransposedBoard, Symbol).
 
 % complete_square(+Board, +Symbol)
@@ -664,14 +661,14 @@ inverted_diagonal(Board, Symbol) :-
 
 % transpose(+Matrix, -TransposedMatrix)
 % Transpõe uma matriz (tabuleiro)
-transpose([], []).
-transpose([F|Fs], Ts) :-
-    transpose(F, [F|Fs], Ts).
+my_transpose([], []).
+my_transpose([F|Fs], Ts) :-
+    my_transpose(F, [F|Fs], Ts).
 
-transpose([], _, []).
-transpose([_|Rs], Ms, [Ts|Tss]) :-
+my_transpose([], _, []).
+my_transpose([_|Rs], Ms, [Ts|Tss]) :-
     lists_firsts_rests(Ms, Ts, Ms1),
-    transpose(Rs, Ms1, Tss).
+    my_transpose(Rs, Ms1, Tss).
 
 % lists_firsts_rests(+ListOfLists, -Firsts, -Rest)
 lists_firsts_rests([], [], []).
@@ -707,7 +704,7 @@ valid_moves(Board, ListOfMoves) :-
     % Identificar as letras e números do tabuleiro
     nth0(0, Board, HeaderRow), % Primeira linha contém os números das colunas
     exclude(=([]), HeaderRow, Numbers), % Remove elementos vazios da linha de cabeçalho
-    tail(Board, Rows), % Remove a linha de cabeçalho do resto do tabuleiro
+    my_tail(Board, Rows), % Remove a linha de cabeçalho do resto do tabuleiro
     findall([Letter, Number],
         (   nth0(RowIndex, Rows, Row),   % Iterar sobre as linhas do tabuleiro
             nth0(ColIndex, Row, Cell),  % Iterar sobre as colunas
@@ -719,13 +716,13 @@ valid_moves(Board, ListOfMoves) :-
 
 % tail(+List, -Tail)
 % Retorna o resto da lista, ignorando o primeiro elemento
-tail([_|T], T).
+my_tail([_|T], T).
 
 % remove_header(+Board, -NewBoard)
 % remove o cabeçalho do tabuleiro
 remove_header(Board, NewBoard):-
     Board=[_|BoardAux],
-    transpose(BoardAux,TransposeBoard),
+    my_transpose(BoardAux,TransposeBoard),
     TransposeBoard=[_|NewBoard].
 
 % clear_console/0
