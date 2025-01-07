@@ -39,7 +39,7 @@ handle_option(4, Difficulty1, Difficulty2) :- % PC/PC
 setup_game(Size, Difficulty1, Difficulty2) :- 
     write('Setting up the game...'), nl,
     GameConfig = [board_size(Size), Difficulty1, Difficulty2],
-    intermediate_state_easy(GameConfig, InitialGameState),
+    intermediate_state_hard(GameConfig, InitialGameState),
     game_loop(InitialGameState).
 
 % get_valid_option(+Number, +Valid)
@@ -752,42 +752,42 @@ final_state(GameConfig, game_state(Board1, Board2, player1, x, 0, 0)):-
         ['E', x, x, x, x, ' ', ' ']
     ].
 
-intermediate_state_hard(GameConfig, game_state(Board1, Board2, player1, x, 2, 0)):-
+intermediate_state_hard(GameConfig, game_state(Board1, Board2, player1, x, 2, 1)):-
     Board1 = [
         [' ', 3, 5, 4, 1, 6, 2],
-        ['B', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['C', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['A', o, o, o, o, o, o],
-        ['F', o, o, ' ', ' ', o, o],
-        ['E', x, x, ' ', ' ', x, x],
-        ['D', x, x, x, x, x, x]
+        ['B', x, x, ' ', ' ', ' ', x],
+        ['C', ' ', o, ' ', o, ' ', ' '],
+        ['A', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['F', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['E', ' ', o, ' ', o, ' ', ' '],
+        ['D', ' ', ' ', ' ', x, ' ', ' ']
     ],
     Board2 = [
         [' ', 5, 2, 6, 3, 4, 1],
-        ['C', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['A', o, o, o, o, o, o],
-        ['B', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['F', o, o, o, o, ' ', ' '],
-        ['D', x, x, x, x, x, x],
-        ['E', x, x, x, x, ' ', ' ']
+        ['C', o, ' ', ' ', ' ', ' ', o],
+        ['A', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['B', x, x, ' ', x, ' ', ' '],
+        ['F', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['D', ' ', ' ', ' ', ' ', ' ', x],
+        ['E', o, ' ', ' ', ' ', ' ', o]
     ].
 
 intermediate_state_easy(GameConfig, game_state(Board1, Board2, player1, x, 1, 0)):-
     Board1 = [
         [' ', 3, 5, 4, 1, 6, 2],
-        ['B', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['C', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['A', o, o, o, o, o, o],
-        ['F', o, o, ' ', ' ', o, o],
-        ['E', x, x, ' ', ' ', x, x],
-        ['D', x, x, x, x, x, x]
+        ['B', x, x, ' ', ' ', ' ', x],
+        ['C', ' ', o, ' ', o, ' ', ' '],
+        ['A', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['F', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['E', ' ', o, ' ', o, ' ', ' '],
+        ['D', ' ', ' ', ' ', x, ' ', ' ']
     ],
     Board2 = [
         [' ', 5, 2, 6, 3, 4, 1],
-        ['C', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['A', o, o, o, o, o, o],
-        ['B', ' ', ' ', ' ', ' ', ' ', ' '],
-        ['F', o, o, o, o, ' ', ' '],
-        ['D', x, x, x, x, x, x],
-        ['E', x, x, x, x, ' ', ' ']
+        ['C', o, ' ', ' ', ' ', ' ', o],
+        ['A', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['B', x, x, ' ', x, ' ', ' '],
+        ['F', ' ', ' ', ' ', ' ', ' ', ' '],
+        ['D', ' ', ' ', ' ', ' ', ' ', x],
+        ['E', o, ' ', ' ', ' ', ' ', o]
     ].
